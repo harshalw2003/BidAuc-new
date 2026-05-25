@@ -1,4 +1,3 @@
-cat > README.md << 'EOF'
 # Blue Collar Marketplace — Microservices
 
 ## Architecture
@@ -33,4 +32,3 @@ docker-compose up
 - Orchestration: Kubernetes (EKS)
 - IaC: Terraform
 - CI/CD: GitHub Actions
-EOF
