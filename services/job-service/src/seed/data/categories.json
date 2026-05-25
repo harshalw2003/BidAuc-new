@@ -1,0 +1,112 @@
+[
+    {
+        "categoryName": "Plumbing",
+        "image": "../static/Assets/categoryImages/plumbing.jpg",
+        "description": "Fix leaks, install pipes, and maintain water systems."
+    },
+    {
+        "categoryName": "Electrical Works",
+        "image": "../static/Assets/categoryImages/electricalWorks.jpg",
+        "description": "Install and repair wiring, fixtures, and electrical panels."
+    },
+    {
+        "categoryName": "Carpentry",
+        "image": "../static/Assets/categoryImages/carpentry.jpg",
+        "description": "Build and repair wood structures, furniture, and fixtures."
+    },
+    {
+        "categoryName": "Painting",
+        "image": "../static/Assets/categoryImages/painting.jpg",
+        "description": "Provide interior and exterior painting services for homes and offices."
+    },
+    {
+        "categoryName": "Appliance Repair",
+        "image": "../static/Assets/categoryImages/applianceRepair.jpg",
+        "description": "Repair household appliances like refrigerators, washers, and ovens."
+    },
+    {
+        "categoryName": "Residential Cleaning",
+        "image": "../static/Assets/categoryImages/residentialCleaning.jpg",
+        "description": "Clean homes, apartments, and private living spaces thoroughly."
+    },
+    {
+        "categoryName": "Commercial Cleaning",
+        "image": "../static/Assets/categoryImages/commercialCleaning.jpg",
+        "description": "Provide cleaning services for offices, stores, and commercial buildings."
+    },
+    {
+        "categoryName": "Disinfection Services",
+        "image": "../static/Assets/categoryImages/disinfectionServices.jpg",
+        "description": "Sanitize spaces to remove germs and keep environments healthy."
+    },
+    {
+        "categoryName": "Pool Cleaning and Maintenance",
+        "image": "../static/Assets/categoryImages/poolCleaning.jpg",
+        "description": "Maintain and clean pools to ensure safe and clear water."
+    },
+    {
+        "categoryName": "Lawn Care and Mowing",
+        "image": "../static/Assets/categoryImages/lawnCare.jpg",
+        "description": "Mow lawns and maintain green spaces for neat outdoor areas."
+    },
+    {
+        "categoryName": "Gardening",
+        "image": "../static/Assets/categoryImages/gardening.jpg",
+        "description": "Plant, prune, and maintain gardens and landscape beds."
+    },
+    {
+        "categoryName": "Tree Trimming and Removal",
+        "image": "../static/Assets/categoryImages/treeTrimming.jpg",
+        "description": "Trim trees and remove hazardous branches or entire trees safely."
+    },
+    {
+        "categoryName": "Residential Moving",
+        "image": "../static/Assets/categoryImages/residentialMoving.jpg",
+        "description": "Move household items and furniture between homes with care."
+    },
+    {
+        "categoryName": "Commercial Moving",
+        "image": "../static/Assets/categoryImages/commercialMoving.jpg",
+        "description": "Handle office and business relocations efficiently and safely."
+    },
+    {
+        "categoryName": "Packing and Unpacking",
+        "image": "../static/Assets/categoryImages/packingUnpacking.jpg",
+        "description": "Pack belongings securely and unpack them at the destination."
+    },
+    {
+        "categoryName": "Welding",
+        "image": "../static/Assets/categoryImages/welding.webp",
+        "description": "Join metal components for repairs, fabrication, and structures."
+    },
+    {
+        "categoryName": "Metal Fabrication",
+        "image": "../static/Assets/categoryImages/metalFabrication.jpg",
+        "description": "Build and shape metal parts for custom projects and repairs."
+    },
+    {
+        "categoryName": "Machinery Repair",
+        "image": "../static/Assets/categoryImages/machineryRepair.jpg",
+        "description": "Repair industrial machines and keep equipment running smoothly."
+    },
+    {
+        "categoryName": "Loading and Unloading",
+        "image": "../static/Assets/categoryImages/loadingUnloading.png",
+        "description": "Load and unload goods for deliveries, moves, and shipments."
+    },
+    {
+        "categoryName": "Pet Grooming",
+        "image": "../static/Assets/categoryImages/petGrooming.webp",
+        "description": "Provide grooming services to keep pets clean and healthy."
+    },
+    {
+        "categoryName": "Water Damage Restoration",
+        "image": "../static/Assets/categoryImages/waterDamageRestoration.jpg",
+        "description": "Repair and restore areas damaged by water leaks or flooding."
+    },
+    {
+        "categoryName": "Fire Damage Restoration",
+        "image": "../static/Assets/categoryImages/fireDamageRestoration.webp",
+        "description": "Restore buildings after fire damage and remove smoke residue."
+    }
+]
