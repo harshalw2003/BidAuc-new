@@ -8,6 +8,7 @@ const cookieParser = require('cookie-parser');
 const config = require('./config');
 const connectDatabase = require('./config/database');
 const bidRoutes = require('./routes/bids');
+const { connectPublisher } = require('./config/rabbitmq');
 
 const app = express();
 
@@ -54,8 +55,10 @@ process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
 // ─── Start Server ─────────────────────────────────────────
+// Update startServer function
 const startServer = async () => {
   await connectDatabase();
+  await connectPublisher();
 
   app.listen(config.port, () => {
     console.log(`✅ Bid Service running on port ${config.port}`);
