@@ -56,7 +56,7 @@ const Home = () => {
       <Header />
 
       {/* Hero Section */}
-      <section className="py-16 md:py-24 px-6 md:px-12 border-b border-slate-200">
+      <section className="py-8 md:py-16 px-6 md:px-12 border-b border-slate-200">
         <div className="max-w-6xl mx-auto">
           <div className="grid md:grid-cols-2 gap-12 items-center">
             <div>
@@ -133,7 +133,7 @@ const Home = () => {
               >
                 <img
                   // src={'../static/Assets/categoryImages/applianceRepair.jpg' + category.image || '🔧'}
-                  src='../'
+                  src={category.image}
                   alt={category.categoryName}
                   className="w-14 h-14 mb-3 object-cover rounded-full"
                 />

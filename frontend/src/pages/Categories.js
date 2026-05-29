@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import Header from '../components/Header';
 import api from '../api';
 import { toast } from '../utils/toast';
+// import categoryImageStatic from '../../categoryImages/carpentry.jpg';
 
 const Categories = () => {
   const [categories, setCategories] = useState([]);
@@ -75,7 +76,7 @@ const Categories = () => {
                 data-testid={`category-${category.categoryName.toLowerCase().replace(/\s+/g, '-')}`}
               >
                 <img
-                  src={'../static/Assets/categoryImages/applianceRepair.jpg' }
+                  src={category.image}
                   alt={category.categoryName}
                   className="w-16 h-16 mb-4 object-cover rounded-full"
                   
