@@ -5,6 +5,7 @@ const router = express.Router();
 const Bid = require('../models/Bid');
 const authMiddleware = require('../middleware/auth');
 const jobServiceClient = require('../clients/jobServiceClient');
+const { publishEvent } = require('../config/rabbitmq');
 
 // Place a bid — provider only
 router.post('/', authMiddleware, async (req, res) => {
@@ -138,21 +139,34 @@ router.patch('/:id/accept', authMiddleware, async (req, res) => {
     );
 
     // Update job status via job-service
-    const { error: updateError } = await jobServiceClient.updateJobStatus(
-      bid.jobId,
-      'active',
-      bid._id
-    );
+const { error: updateError } = await jobServiceClient.updateJobStatus(
+  bid.jobId,
+  'active',
+  bid._id
+);
 
-    if (updateError) {
-      // Critical: bid accepted but job status not updated
-      // Log this for manual intervention
-      // In Phase 2 this becomes a RabbitMQ event for reliability
-      console.error(
-        `CRITICAL: Bid ${bid._id} accepted but job ${bid.jobId} status update failed:`,
-        updateError
-      );
-    }
+if (updateError) {
+  console.error(
+    `CRITICAL: Bid ${bid._id} accepted but job status update failed:`,
+    updateError
+  );
+}
+
+// Publish async event to RabbitMQ
+// Notification service will handle SMS sending
+publishEvent('bid.accepted', {
+  bidId: bid._id,
+  jobId: bid.jobId,
+  providerId: bid.providerId,
+  seekerId: req.user._id,
+  amount: bid.amount,
+  // Note: notification-service needs phone numbers
+  // In Phase 2 these come from user-service via event enrichment
+  // For now we pass IDs and notification-service can be enhanced
+  seekerPhone: req.body.seekerPhone || null,
+  providerPhone: req.body.providerPhone || null,
+  jobTitle: req.body.jobTitle || 'Your job'
+});
 
     res.json({
       bid,
