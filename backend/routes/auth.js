@@ -225,7 +225,7 @@ router.post('/refresh', (req, res) => {
       httpOnly: true,
       secure: false,
       sameSite: 'lax',
-      maxAge: 15 * 60 * 1000
+      // maxAge: 15 * 60 * 1000 // 15 minutes
     });
     
     res.json({ message: 'Token refreshed' });

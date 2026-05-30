@@ -37,6 +37,7 @@ const JobDetail = () => {
   const [submitting, setSubmitting] = useState(false);
   const [userBid, setUserBid] = useState(null);
   const [paymentLoading, setPaymentLoading] = useState(false);
+  const [categories, setCategories] = useState([]);
   const { user } = useAuth();
   const navigate = useNavigate();
 
@@ -71,6 +72,27 @@ const JobDetail = () => {
   useEffect(() => {
     fetchJobDetails();
   }, [fetchJobDetails]);
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const res = await api.get('/api/categories');
+        setCategories(res.data || []);
+      } catch (err) {
+        // ignore
+      }
+    };
+    fetchCategories();
+  }, []);
+
+  const getCategoryName = (cat) => {
+    if (!cat) return null;
+    if (typeof cat === 'string') {
+      const found = categories.find((c) => c._id === cat);
+      return found ? found.name : null;
+    }
+    return cat.name || null;
+  };
 
   const handlePlaceBid = async (e) => {
     e.preventDefault();
@@ -301,9 +323,9 @@ const JobDetail = () => {
               </span>
             </div>
 
-            {job.categoryId && (
+            {getCategoryName(job.categoryId) && (
               <span className="inline-block text-sm px-4 py-2 bg-slate-100 text-slate-700">
-                {job.categoryId.name}
+                {getCategoryName(job.categoryId)}
               </span>
             )}
           </div>
