@@ -56,7 +56,7 @@ const Home = () => {
       <Header />
 
       {/* Hero Section */}
-      <section className="py-16 md:py-24 px-6 md:px-12 border-b border-slate-200">
+      <section className="py-8 md:py-16 px-6 md:px-12 border-b border-slate-200">
         <div className="max-w-6xl mx-auto">
           <div className="grid md:grid-cols-2 gap-12 items-center">
             <div>
@@ -129,15 +129,15 @@ const Home = () => {
                 key={category._id}
                 to={`/jobs?category=${category._id}`}
                 className="bg-white border border-slate-200 p-6 hover:border-primary transition-colors duration-200 cursor-pointer"
-                data-testid={`category-card-${category.categoryName.toLowerCase().replace(/\s+/g, '-')}`}
+                data-testid={`category-card-${category.name.toLowerCase().replace(/\s+/g, '-')}`}
               >
                 <img
                   // src={'../static/Assets/categoryImages/applianceRepair.jpg' + category.image || '🔧'}
-                  src='../'
-                  alt={category.categoryName}
+                  src={category.icon}
+                  alt={category.name}
                   className="w-14 h-14 mb-3 object-cover rounded-full"
                 />
-                <h3 className="font-medium text-slate-900 mb-1">{category.categoryName}</h3>
+                <h3 className="font-medium text-slate-900 mb-1">{category.name}</h3>
                 <p className="text-sm text-slate-600">{category.description}</p>
               </Link>
             ))}

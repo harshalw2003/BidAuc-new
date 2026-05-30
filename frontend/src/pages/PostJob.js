@@ -30,6 +30,7 @@ const PostJob = () => {
   const fetchCategories = async () => {
     try {
       const response = await api.get('/api/categories');
+      console.log('Fetched categories for PostJob:', response.data);
       setCategories(response.data);
     } catch (error) {
       toast.error('Failed to load categories');
@@ -99,12 +100,14 @@ const PostJob = () => {
                 name="categoryId"
                 value={formData.categoryId}
                 onChange={handleChange}
-                className="border border-slate-200 rounded-none px-4 py-3 w-full focus:ring-1 focus:ring-primary focus:border-primary outline-none transition-all"
+                className="border border-slate-200 rounded-none px-4 py-3 w-full bg-white text-slate-900 focus:ring-1 focus:ring-primary focus:border-primary outline-none transition-all"
                 data-testid="category-select"
               >
-                <option value="">Select a category</option>
+                <option value="" className="text-slate-500">
+                  Select a category
+                </option>
                 {categories.map((category) => (
-                  <option key={category._id} value={category._id}>
+                  <option key={category._id} value={category._id} className="text-slate-900">
                     {category.name}
                   </option>
                 ))}

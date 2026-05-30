@@ -1,13 +1,13 @@
 const Category = require('../models/Category');
 const categoryJson = require('../category.json');
 
-const categories = categoryJson
-  .filter(cat => cat.categoryName && cat.image)
-  .map(cat => ({
-    name: cat.categoryName,
-    icon: cat.image,
-    description: cat.categoryName
-  }));
+// const categories = categoryJson
+//   .filter(cat => cat.categoryName && cat.image)
+//   .map(cat => ({
+//     name: cat.categoryName,
+//     icon: cat.image,
+//     description: cat.categoryName
+//   }));
 
 const seedCategories = async () => {
   try {
@@ -29,7 +29,7 @@ const seedCategories = async () => {
     const count = await Category.countDocuments();
     console.log(`Current category count: ${count}`);
     if (count === 0) {
-      await Category.insertMany(categories);
+      await Category.insertMany(categoryJson);
       console.log('✅ Categories seeded');
     } else {
       console.log('ℹ️ Categories collection already contains data, skipping seed.');

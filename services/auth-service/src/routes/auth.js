@@ -17,14 +17,14 @@ const otpClient = new twilio(
 
 // ─── Helpers ─────────────────────────────────────────────
 
-const generateTokens = (userId) => {
+const generateTokens = (userId, role) => {
   const accessToken = jwt.sign(
-    { userId },
+    { userId, role },
     config.jwt.secret,
     { expiresIn: config.jwt.accessExpiry }
   );
   const refreshToken = jwt.sign(
-    { userId },
+    { userId, role },
     config.jwt.secret,
     { expiresIn: config.jwt.refreshExpiry }
   );
@@ -110,7 +110,8 @@ router.post('/verify-otp', async (req, res) => {
     const user = await User.findOne({ phone }).select('-password');
 
     if (user) {
-      const { accessToken, refreshToken } = generateTokens(user._id);
+      const { accessToken, refreshToken } = generateTokens(user._id, user.role);
+
       setTokenCookies(res, accessToken, refreshToken);
       return res.json({ user, isNewUser: false });
     }
@@ -144,7 +145,8 @@ router.post('/register', async (req, res) => {
     const user = new User({ phone, name, role, password: hashedPassword });
     await user.save();
 
-    const { accessToken, refreshToken } = generateTokens(user._id);
+    const { accessToken, refreshToken } = generateTokens(user._id, user.role);
+
     setTokenCookies(res, accessToken, refreshToken);
 
     const userResponse = user.toObject();
@@ -177,12 +179,12 @@ router.post('/refresh', (req, res) => {
       return res.status(401).json({ message: 'Refresh token not found' });
     }
 
-    const decoded = jwt.verify(refreshToken, config.jwt.secret);
-    const accessToken = jwt.sign(
-      { userId: decoded.userId },
-      config.jwt.secret,
-      { expiresIn: config.jwt.accessExpiry }
-    );
+  const decoded = jwt.verify(refreshToken, config.jwt.secret);
+const accessToken = jwt.sign(
+  { userId: decoded.userId, role: decoded.role },
+  config.jwt.secret,
+  { expiresIn: config.jwt.accessExpiry }
+);
 
     res.cookie('access_token', accessToken, {
       httpOnly: true,
