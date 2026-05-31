@@ -19,7 +19,7 @@ const Home = () => {
 
   const fetchCategories = async () => {
     try {
-      const response = await api.get('/api/categories');
+      const response = await api.get('/api/categories/');
       console.log('Fetched categories from Home:', response.data);
       if (response.data && response.data.length > 0) {
         console.log('Category structure:', JSON.stringify(response.data[0], null, 2));

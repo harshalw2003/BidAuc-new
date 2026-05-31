@@ -39,17 +39,20 @@ const JobDetail = () => {
   const [paymentLoading, setPaymentLoading] = useState(false);
   const [categories, setCategories] = useState([]);
   const { user } = useAuth();
+  console.log(user);
   const navigate = useNavigate();
 
   const fetchJobDetails = useCallback(async () => {
     try {
       const jobResponse = await api.get(`/api/jobs/${id}`);
       setJob(jobResponse.data);
+      console.log('Fetched job details:', jobResponse.data);
 
       if (user) {
-        if (user.role === 'seeker' && jobResponse.data.seekerId._id === user._id) {
+        if (user.role === 'seeker' && jobResponse.data.seekerId === user._id) {
           const bidsResponse = await api.get(`/api/bids/job/${id}`);
           setBids(bidsResponse.data);
+          console.log('Fetched bids for job:', bidsResponse.data);
         }
 
         if (user.role === 'provider') {
@@ -76,7 +79,7 @@ const JobDetail = () => {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const res = await api.get('/api/categories');
+        const res = await api.get('/api/categories/');
         setCategories(res.data || []);
       } catch (err) {
         // ignore
@@ -104,7 +107,7 @@ const JobDetail = () => {
 
     setSubmitting(true);
     try {
-      const response = await api.post('/api/bids', {
+      const response = await api.post('/api/bids/', {
         jobId: id,
         amount: parseFloat(bidAmount),
         message: bidMessage
@@ -281,7 +284,7 @@ const JobDetail = () => {
   const canBid = user && user.role === 'provider' && job.status === 'open' && !userBid;
   const canMarkComplete = user &&
     user.role === 'provider' &&
-    job.status === 'active' &&
+    job.status === 'active' &&+
     userBid?.status === 'accepted';
 
   return (

@@ -22,7 +22,7 @@ const JobList = () => {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const res = await api.get('/api/categories');
+        const res = await api.get('/api/categories/');
         setCategories(res.data || []);
       } catch (err) {
         // ignore
@@ -43,7 +43,7 @@ const JobList = () => {
   const fetchJobs = async () => {
     setLoading(true);
     try {
-      let endpoint = '/api/jobs';
+      let endpoint = '/api/jobs/';
       const params = new URLSearchParams();
 
       if (user) {

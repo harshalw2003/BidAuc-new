@@ -4,8 +4,33 @@ const express = require('express');
 const router = express.Router();
 const Job = require('../models/Job');
 const authMiddleware = require('../middleware/auth');
+const userServiceClient = require('../clients/userServiceClient');
 
-// Create job — seeker only
+// ─── Helper: Attach seeker details to jobs ────────────────
+const attachSeekerDetails = async (jobs) => {
+  if (!jobs || jobs.length === 0) return jobs;
+
+  // Get unique seeker IDs
+  const seekerIds = [...new Set(jobs.map(j => j.seekerId.toString()))];
+
+  // Fetch all seekers in parallel
+  const { data: usersMap } = await userServiceClient.getUsers(seekerIds);
+  console.log('Fetched seeker details for jobs:', usersMap);
+
+  // Attach seeker data to each job
+  return jobs.map(job => {
+    const jobObj = job.toObject();
+    console.log("Job with seeker details:", jobObj);
+    jobObj.seekerId = usersMap[job.seekerId.toString()] || {
+      _id: job.seekerId,
+      name: 'Unknown',
+      phone: ''
+    };
+    return jobObj;
+  });
+};
+
+// ─── Create Job — seeker only ─────────────────────────────
 router.post('/', authMiddleware, async (req, res) => {
   try {
     if (req.user.role !== 'seeker') {
@@ -31,13 +56,16 @@ router.post('/', authMiddleware, async (req, res) => {
     await job.save();
     await job.populate('categoryId', 'name icon');
 
-    res.status(201).json(job);
+    // Attach seeker details
+    const [enrichedJob] = await attachSeekerDetails([job]);
+
+    res.status(201).json(enrichedJob);
   } catch (error) {
     res.status(500).json({ message: 'Error creating job', error: error.message });
   }
 });
 
-// Get all open jobs — public
+// ─── Get All Open Jobs ────────────────────────────────────
 router.get('/', async (req, res) => {
   try {
     const { categoryId, status } = req.query;
@@ -50,13 +78,17 @@ router.get('/', async (req, res) => {
       .populate('categoryId', 'name icon')
       .sort({ createdAt: -1 });
 
-    res.json(jobs);
+    const enrichedJobs = await attachSeekerDetails(jobs);
+
+    res.json(enrichedJobs);
+    console.log('Enriched jobs:', enrichedJobs);
+    
   } catch (error) {
     res.status(500).json({ message: 'Error fetching jobs', error: error.message });
   }
 });
 
-// Get seeker's own jobs
+// ─── Get Seeker's Own Jobs ────────────────────────────────
 router.get('/my', authMiddleware, async (req, res) => {
   try {
     if (req.user.role !== 'seeker') {
@@ -71,37 +103,36 @@ router.get('/my', authMiddleware, async (req, res) => {
       .populate('categoryId', 'name icon')
       .sort({ createdAt: -1 });
 
-    res.json(jobs);
+    const enrichedJobs = await attachSeekerDetails(jobs);
+
+    res.json(enrichedJobs);
   } catch (error) {
     res.status(500).json({ message: 'Error fetching jobs', error: error.message });
   }
 });
 
-// Get provider's active jobs
+// ─── Get Provider's Active Jobs ───────────────────────────
 router.get('/active', authMiddleware, async (req, res) => {
   try {
     if (req.user.role !== 'provider') {
       return res.status(403).json({ message: 'Only providers can view active jobs' });
     }
 
-    // Internal call to bid-service to get accepted bid job IDs
-    // For now we query jobs with status active where acceptedBidId exists
-    // This will be replaced with proper inter-service call in Phase 2
     const { status } = req.query;
 
-    const jobs = await Job.find({
-      status: status || 'active'
-    })
+    const jobs = await Job.find({ status: status || 'active' })
       .populate('categoryId', 'name icon')
       .sort({ createdAt: -1 });
 
-    res.json(jobs);
+    const enrichedJobs = await attachSeekerDetails(jobs);
+
+    res.json(enrichedJobs);
   } catch (error) {
     res.status(500).json({ message: 'Error fetching active jobs', error: error.message });
   }
 });
 
-// Get single job
+// ─── Get Single Job ───────────────────────────────────────
 router.get('/:id', async (req, res) => {
   try {
     const job = await Job.findById(req.params.id)
@@ -111,13 +142,15 @@ router.get('/:id', async (req, res) => {
       return res.status(404).json({ message: 'Job not found' });
     }
 
-    res.json(job);
+    const [enrichedJob] = await attachSeekerDetails([job]);
+
+    res.json(enrichedJob);
   } catch (error) {
     res.status(500).json({ message: 'Error fetching job', error: error.message });
   }
 });
 
-// Mark job complete — provider only
+// ─── Mark Job Complete — provider only ───────────────────
 router.patch('/:id/complete', authMiddleware, async (req, res) => {
   try {
     if (req.user.role !== 'provider') {
@@ -134,14 +167,15 @@ router.patch('/:id/complete', authMiddleware, async (req, res) => {
       return res.status(404).json({ message: 'Job not found' });
     }
 
-    res.json(job);
+    const [enrichedJob] = await attachSeekerDetails([job]);
+
+    res.json(enrichedJob);
   } catch (error) {
     res.status(500).json({ message: 'Error completing job', error: error.message });
   }
 });
 
-// Internal route — called by bid-service to update job status
-// Not exposed through API gateway to public
+// ─── Internal: Update Job Status ──────────────────────────
 router.patch('/:id/status', async (req, res) => {
   try {
     const { status, acceptedBidId } = req.body;

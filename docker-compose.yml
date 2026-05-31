@@ -101,6 +101,8 @@ services:
     depends_on:
       mongo-user:
         condition: service_started
+      rabbitmq:                        # ADD THIS
+        condition: service_healthy     # ADD THIS
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:3002/health"]
       interval: 30s
@@ -120,6 +122,9 @@ services:
     depends_on:
       mongo-job:
         condition: service_started
+      user-service:           
+        condition: service_healthy
+
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:3003/health"]
       interval: 30s
@@ -142,6 +147,8 @@ services:
       rabbitmq:
         condition: service_healthy
       job-service:
+        condition: service_healthy
+      user-service:          
         condition: service_healthy
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:3004/health"]
