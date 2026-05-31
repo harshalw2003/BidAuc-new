@@ -37,18 +37,22 @@ const JobDetail = () => {
   const [submitting, setSubmitting] = useState(false);
   const [userBid, setUserBid] = useState(null);
   const [paymentLoading, setPaymentLoading] = useState(false);
+  const [categories, setCategories] = useState([]);
   const { user } = useAuth();
+  console.log(user);
   const navigate = useNavigate();
 
   const fetchJobDetails = useCallback(async () => {
     try {
       const jobResponse = await api.get(`/api/jobs/${id}`);
       setJob(jobResponse.data);
+      console.log('Fetched job details:', jobResponse.data);
 
       if (user) {
-        if (user.role === 'seeker' && jobResponse.data.seekerId._id === user._id) {
+        if (user.role === 'seeker' && jobResponse.data.seekerId === user._id) {
           const bidsResponse = await api.get(`/api/bids/job/${id}`);
           setBids(bidsResponse.data);
+          console.log('Fetched bids for job:', bidsResponse.data);
         }
 
         if (user.role === 'provider') {
@@ -72,6 +76,27 @@ const JobDetail = () => {
     fetchJobDetails();
   }, [fetchJobDetails]);
 
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const res = await api.get('/api/categories/');
+        setCategories(res.data || []);
+      } catch (err) {
+        // ignore
+      }
+    };
+    fetchCategories();
+  }, []);
+
+  const getCategoryName = (cat) => {
+    if (!cat) return null;
+    if (typeof cat === 'string') {
+      const found = categories.find((c) => c._id === cat);
+      return found ? found.name : null;
+    }
+    return cat.name || null;
+  };
+
   const handlePlaceBid = async (e) => {
     e.preventDefault();
 
@@ -82,7 +107,7 @@ const JobDetail = () => {
 
     setSubmitting(true);
     try {
-      const response = await api.post('/api/bids', {
+      const response = await api.post('/api/bids/', {
         jobId: id,
         amount: parseFloat(bidAmount),
         message: bidMessage
@@ -259,7 +284,7 @@ const JobDetail = () => {
   const canBid = user && user.role === 'provider' && job.status === 'open' && !userBid;
   const canMarkComplete = user &&
     user.role === 'provider' &&
-    job.status === 'active' &&
+    job.status === 'active' &&+
     userBid?.status === 'accepted';
 
   return (
@@ -301,9 +326,9 @@ const JobDetail = () => {
               </span>
             </div>
 
-            {job.categoryId && (
+            {getCategoryName(job.categoryId) && (
               <span className="inline-block text-sm px-4 py-2 bg-slate-100 text-slate-700">
-                {job.categoryId.name}
+                {getCategoryName(job.categoryId)}
               </span>
             )}
           </div>

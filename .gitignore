@@ -3,6 +3,9 @@ commit-guide.txt
 # Dependencies
 node_modules/
 **/node_modules/
+**/node_modules/.cache/
+
+
 
 # Environment files
 .env
@@ -26,3 +29,7 @@ Thumbs.db
 # Build
 dist/
 build/
+docker/env/*.env
+
+
+

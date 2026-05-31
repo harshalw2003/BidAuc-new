@@ -10,6 +10,7 @@ const JobList = () => {
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('all');
+  const [categories, setCategories] = useState([]);
   const { user } = useAuth();
   const [searchParams] = useSearchParams();
   const categoryFilter = searchParams.get('category');
@@ -18,10 +19,31 @@ const JobList = () => {
     fetchJobs();
   }, [activeTab, categoryFilter]);
 
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const res = await api.get('/api/categories/');
+        setCategories(res.data || []);
+      } catch (err) {
+        // ignore
+      }
+    };
+    fetchCategories();
+  }, []);
+
+  const getCategoryName = (cat) => {
+    if (!cat) return null;
+    if (typeof cat === 'string') {
+      const found = categories.find((c) => c._id === cat);
+      return found ? found.name : null;
+    }
+    return cat.name || null;
+  };
+
   const fetchJobs = async () => {
     setLoading(true);
     try {
-      let endpoint = '/api/jobs';
+      let endpoint = '/api/jobs/';
       const params = new URLSearchParams();
 
       if (user) {
@@ -220,9 +242,9 @@ const JobList = () => {
                     </span>
                   </div>
                   <p className="text-slate-600 line-clamp-2 mb-4">{job.description}</p>
-                  {job.categoryId && (
+                  {getCategoryName(job.categoryId) && (
                     <span className="inline-block text-xs px-3 py-1 bg-slate-100 text-slate-700">
-                      {job.categoryId.name}
+                      {getCategoryName(job.categoryId)}
                     </span>
                   )}
                 </Link>

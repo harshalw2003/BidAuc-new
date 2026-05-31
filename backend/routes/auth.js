@@ -47,31 +47,16 @@ router.post('/send-otp', async (req, res) => {
      // Method to send the otp to phone number
     console.log('Preparing to send OTP to:', phone);
     // console.log(otpClient);
-      const sendSMS = async (body) =>{
 
-          let msgOptions = {
+    otpClient.messages
+    .create({
+        body: 'Your OTP for BidAuc is: ' + otp,
+        from: process.env.SEND_OTP_FROM_NUMBER,
+        to: '+91' + phone
+    })
+    .then(message => console.log(message.sid));
 
-              from: process.env.SEND_OTP_FROM_NUMBER,
-              to:"+91"+phone,
-              body
-          }
-          try{
-            console.log('Sending OTP with options:', msgOptions);
-            
-              const message = await otpClient.messages.create(msgOptions)  
-              console.log(message);
-          }catch(e){
-            console.log("Error sending OTP:", e.message);
-              console.error(e);
-          }
-      }
-
-      sendSMS(`Your OTP is: ${otp}`);
-
-    
-    // Log for development (in production, send via SMS)
-    console.log(`OTP for ${phone}: ${otp}`);
-    
+  
     // Return success message (don't expose OTP in production)
     res.json({ 
       message: 'OTP sent successfully',
@@ -225,7 +210,7 @@ router.post('/refresh', (req, res) => {
       httpOnly: true,
       secure: false,
       sameSite: 'lax',
-      maxAge: 15 * 60 * 1000
+      // maxAge: 15 * 60 * 1000 // 15 minutes
     });
     
     res.json({ message: 'Token refreshed' });

@@ -8,6 +8,7 @@ const cookieParser = require('cookie-parser');
 const config = require('./config');
 const connectDatabase = require('./config/database');
 const authRoutes = require('./routes/auth');
+const { connectPublisher } = require('./config/rabbitmq');
 
 const app = express();
 

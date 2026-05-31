@@ -73,15 +73,15 @@ const Categories = () => {
                 key={category._id}
                 to={`/jobs?category=${category._id}`}
                 className="bg-white border border-slate-200 p-8 hover:border-primary transition-colors duration-200 cursor-pointer"
-                data-testid={`category-${category.categoryName.toLowerCase().replace(/\s+/g, '-')}`}
+                data-testid={`category-${category.name.toLowerCase().replace(/\s+/g, '-')}`}
               >
                 <img
-                  src={category.image}
-                  alt={category.categoryName}
+                  src={category.icon}
+                  alt={category.name}
                   className="w-16 h-16 mb-4 object-cover rounded-full"
                   
                 />
-                <h3 className="text-xl font-medium text-slate-900 mb-2 font-heading">{category.categoryName}</h3>
+                <h3 className="text-xl font-medium text-slate-900 mb-2 font-heading">{category.name}</h3>
                 <p className="text-base text-slate-600">{category.description}</p>
               </Link>
             ))}

@@ -9,6 +9,7 @@ const User = require('../models/User');
 const Otp = require('../models/Otp');
 const authMiddleware = require('../middleware/auth');
 const config = require('../config');
+const { publishEvent } = require('../config/rabbitmq');
 
 const otpClient = new twilio(
   config.twilio.accountSid,
@@ -46,17 +47,7 @@ const setTokenCookies = (res, accessToken, refreshToken) => {
   });
 };
 
-const sendSMS = async (to, body) => {
-  try {
-    await otpClient.messages.create({
-      from: config.twilio.fromNumber,
-      to: `+91${to}`,
-      body
-    });
-  } catch (error) {
-    console.error('SMS send failed:', error.message);
-  }
-};
+
 
 // ─── Routes ──────────────────────────────────────────────
 
@@ -75,8 +66,15 @@ router.post('/send-otp', async (req, res) => {
 
     await new Otp({ phone, otp, isUsed: false }).save();
 
-    await sendSMS(phone, `Your OTP is: ${otp}`);
+    // otpClient.messages
+    // .create({
+    //     body: 'Your OTP for BidAuc is: ' + otp,
+    //     from: process.env.SEND_OTP_FROM_NUMBER,
+    //     to: '+91' + phone
+    // })
+    // .then(message => console.log(message.sid));
 
+    
     console.log(`OTP for ${phone}: ${otp}`);
 
     res.json({
@@ -94,30 +92,38 @@ router.post('/verify-otp', async (req, res) => {
   try {
     const { phone, otp } = req.body;
 
+    console.log('verify-otp called with:', { phone, otp });
+
     if (!phone || !otp) {
       return res.status(400).json({ message: 'Phone and OTP are required' });
     }
 
     const otpRecord = await Otp.findOne({ phone, otp, isUsed: false });
+    console.log('OTP record found:', otpRecord);
 
     if (!otpRecord) {
       return res.status(400).json({ message: 'Invalid or expired OTP' });
     }
 
     otpRecord.isUsed = true;
+    console.log('Saving OTP record...');
     await otpRecord.save();
+    console.log('OTP record saved');
 
+    console.log('Finding user with phone:', phone);
     const user = await User.findOne({ phone }).select('-password');
+    console.log('User found:', user);
 
     if (user) {
+      console.log('Generating tokens for existing user');
       const { accessToken, refreshToken } = generateTokens(user._id, user.role);
-
       setTokenCookies(res, accessToken, refreshToken);
       return res.json({ user, isNewUser: false });
     }
 
     return res.json({ phone, isNewUser: true });
   } catch (error) {
+    console.error('verify-otp ERROR:', error);
     res.status(500).json({ message: 'Error verifying OTP', error: error.message });
   }
 });
@@ -144,6 +150,18 @@ router.post('/register', async (req, res) => {
 
     const user = new User({ phone, name, role, password: hashedPassword });
     await user.save();
+
+    publishEvent('user.registered', {
+  _id: user._id,
+  name: user.name,
+  phone: user.phone,
+  role: user.role,
+  profilePhoto: user.profilePhoto,
+  address: user.address,
+  bio: user.bio,
+  skills: user.skills,
+  createdAt: user.createdAt
+});
 
     const { accessToken, refreshToken } = generateTokens(user._id, user.role);
 

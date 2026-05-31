@@ -19,7 +19,7 @@ const Home = () => {
 
   const fetchCategories = async () => {
     try {
-      const response = await api.get('/api/categories');
+      const response = await api.get('/api/categories/');
       console.log('Fetched categories from Home:', response.data);
       if (response.data && response.data.length > 0) {
         console.log('Category structure:', JSON.stringify(response.data[0], null, 2));
@@ -129,15 +129,15 @@ const Home = () => {
                 key={category._id}
                 to={`/jobs?category=${category._id}`}
                 className="bg-white border border-slate-200 p-6 hover:border-primary transition-colors duration-200 cursor-pointer"
-                data-testid={`category-card-${category.categoryName.toLowerCase().replace(/\s+/g, '-')}`}
+                data-testid={`category-card-${category.name.toLowerCase().replace(/\s+/g, '-')}`}
               >
                 <img
                   // src={'../static/Assets/categoryImages/applianceRepair.jpg' + category.image || '🔧'}
-                  src={category.image}
-                  alt={category.categoryName}
+                  src={category.icon}
+                  alt={category.name}
                   className="w-14 h-14 mb-3 object-cover rounded-full"
                 />
-                <h3 className="font-medium text-slate-900 mb-1">{category.categoryName}</h3>
+                <h3 className="font-medium text-slate-900 mb-1">{category.name}</h3>
                 <p className="text-sm text-slate-600">{category.description}</p>
               </Link>
             ))}
