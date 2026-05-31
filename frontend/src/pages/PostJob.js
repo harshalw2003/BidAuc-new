@@ -29,7 +29,7 @@ const PostJob = () => {
 
   const fetchCategories = async () => {
     try {
-      const response = await api.get('/api/categories');
+      const response = await api.get('/api/categories/');
       console.log('Fetched categories for PostJob:', response.data);
       setCategories(response.data);
     } catch (error) {
@@ -51,7 +51,7 @@ const PostJob = () => {
 
     setLoading(true);
     try {
-      const response = await api.post('/api/jobs', formData);
+      const response = await api.post('/api/jobs/', formData);
       toast.success('Job posted successfully!');
       navigate(`/jobs/${response.data._id}`);
     } catch (error) {
