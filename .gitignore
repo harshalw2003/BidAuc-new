@@ -3,9 +3,11 @@ commit-guide.txt
 # Dependencies
 node_modules/
 **/node_modules/
-**/node_modules/.cache/
-
-
+frontend/node_modules/
+.eslintcache
+.cache/
+*.pack
+*.pack.old
 
 # Environment files
 .env
@@ -29,7 +31,3 @@ Thumbs.db
 # Build
 dist/
 build/
-docker/env/*.env
-
-
-
