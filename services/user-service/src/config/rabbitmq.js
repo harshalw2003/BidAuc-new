@@ -5,7 +5,10 @@ const amqp = require('amqplib');
 const RABBITMQ_URL = process.env.RABBITMQ_URL || 'amqp://localhost:5672';
 const EXCHANGE = process.env.RABBITMQ_EXCHANGE || 'marketplace_events';
 const QUEUE = 'user_service_queue';
-const ROUTING_KEYS = ['user.registered'];
+const ROUTING_KEYS = [
+  'user.registered',
+  'user.updated'      // ADD THIS
+];
 
 let channel = null;
 
@@ -14,24 +17,18 @@ const connectConsumer = async (onMessage) => {
     const connection = await amqp.connect(RABBITMQ_URL);
     channel = await connection.createChannel();
 
-    // Declare exchange
     await channel.assertExchange(EXCHANGE, 'topic', { durable: true });
-
-    // Declare queue
     await channel.assertQueue(QUEUE, { durable: true });
 
-    // Bind routing keys
     for (const key of ROUTING_KEYS) {
       await channel.bindQueue(QUEUE, EXCHANGE, key);
       console.log(`✅ User Service: Bound to routing key: ${key}`);
     }
 
-    // Process one message at a time
     channel.prefetch(1);
 
     console.log(`👂 User Service: Listening on queue: ${QUEUE}`);
 
-    // Start consuming
     channel.consume(QUEUE, async (message) => {
       if (!message) return;
 
@@ -44,9 +41,9 @@ const connectConsumer = async (onMessage) => {
         await onMessage(routingKey, data);
 
         channel.ack(message);
-        console.log(`✅ User Service: Message acknowledged`);
+        console.log(`✅ Message acknowledged [${routingKey}]`);
       } catch (error) {
-        console.error('❌ User Service: Message processing failed:', error.message);
+        console.error('❌ Message processing failed:', error.message);
         channel.nack(message, false, false);
       }
     }, { noAck: false });
