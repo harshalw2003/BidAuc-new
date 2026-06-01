@@ -102,7 +102,7 @@ const Categories = () => {
 
           <div ref={gridRef} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" data-testid="all-categories-grid">
             {visibleCategories.map((category) => {
-              const buttonHref = user?.role === 'seeker' ? '/post-job' : `/jobs?category=${category._id}`;
+              const buttonHref = user?.role === 'seeker' ? `/post-job?category=${category._id}` : `/jobs?category=${category._id}`;
               const buttonLabel = user?.role === 'seeker' ? 'Post Job' : 'View Jobs';
 
               return (
