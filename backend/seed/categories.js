@@ -9,6 +9,8 @@ const categoryJson = require('../category.json');
 //     description: cat.categoryName
 //   }));
 
+  console.log('Prepared categories for seeding:', categoryJson);
+
 const seedCategories = async () => {
   try {
     const indexes = await Category.collection.indexes();

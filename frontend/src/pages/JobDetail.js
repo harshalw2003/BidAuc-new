@@ -39,17 +39,20 @@ const JobDetail = () => {
   const [paymentLoading, setPaymentLoading] = useState(false);
   const [categories, setCategories] = useState([]);
   const { user } = useAuth();
+  console.log(user);
   const navigate = useNavigate();
 
   const fetchJobDetails = useCallback(async () => {
     try {
       const jobResponse = await api.get(`/api/jobs/${id}`);
       setJob(jobResponse.data);
+      console.log('Fetched job details:', jobResponse.data);
 
       if (user) {
-        if (user.role === 'seeker' && jobResponse.data.seekerId._id === user._id) {
+        if (user.role === 'seeker' && jobResponse.data.seekerId === user._id) {
           const bidsResponse = await api.get(`/api/bids/job/${id}`);
           setBids(bidsResponse.data);
+          console.log('Fetched bids for job:', bidsResponse.data);
         }
 
         if (user.role === 'provider') {
@@ -76,7 +79,7 @@ const JobDetail = () => {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const res = await api.get('/api/categories');
+        const res = await api.get('/api/categories/');
         setCategories(res.data || []);
       } catch (err) {
         // ignore
@@ -104,7 +107,7 @@ const JobDetail = () => {
 
     setSubmitting(true);
     try {
-      const response = await api.post('/api/bids', {
+      const response = await api.post('/api/bids/', {
         jobId: id,
         amount: parseFloat(bidAmount),
         message: bidMessage
@@ -285,71 +288,77 @@ const JobDetail = () => {
     userBid?.status === 'accepted';
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-slate-50">
       <Header />
 
       <div className="py-16 md:py-24 px-6 md:px-12">
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-5xl mx-auto space-y-8">
 
-          {/* Job Header */}
-          <div className="mb-8">
-            <div className="flex items-start justify-between mb-4">
-              <h1
-                className="text-4xl md:text-5xl font-bold text-slate-900 font-heading tracking-tight"
-                data-testid="job-title"
-              >
-                {job.title}
-              </h1>
-              <span
-                className={`px-3 py-1 text-xs font-medium ${getStatusColor(job.status)}`}
-                data-testid="job-status"
-              >
-                {job.status.toUpperCase()}
-              </span>
+          <div className="rounded-[28px] border border-slate-200 bg-white p-8 shadow-[0_10px_40px_rgba(15,23,42,0.08)]">
+            <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+              <div className="space-y-4">
+                <p className="text-sm uppercase tracking-[0.3em] text-primary font-semibold">
+                  Job details
+                </p>
+                <h1
+                  className="text-4xl md:text-5xl font-bold text-slate-900 font-heading tracking-tight"
+                  data-testid="job-title"
+                >
+                  {job.title}
+                </h1>
+                <p className="max-w-3xl text-base text-slate-600 leading-7">
+                  Review the job details, bids, and progress in a clean modern view.
+                </p>
+              </div>
+
+              <div className="flex flex-col gap-3 rounded-3xl border border-slate-200 bg-slate-50 p-5">
+                <span className={`inline-flex items-center justify-center rounded-full px-4 py-2 text-xs font-semibold ${getStatusColor(job.status)}`}>
+                  {job.status.toUpperCase()}
+                </span>
+                <div className="text-sm text-slate-600">
+                  Posted {formatDate(job.createdAt)}
+                </div>
+                <div className="text-xl font-semibold text-slate-900">
+                  ₹{job.budget}
+                </div>
+              </div>
             </div>
 
-            <div className="flex flex-wrap items-center gap-4 text-base text-slate-600 mb-6">
-              <span className="flex items-center gap-1">
-                <MapPin size={18} />
-                {job.location}
-              </span>
-              <span className="flex items-center gap-1">
-                <DollarSign size={18} />
-                ₹{job.budget}
-              </span>
-              <span className="flex items-center gap-1">
-                <Clock size={18} />
-                Posted {formatDate(job.createdAt)}
-              </span>
+            <div className="mt-8 grid gap-4 sm:grid-cols-2">
+              <div className="rounded-3xl bg-slate-50 p-5">
+                <p className="text-sm text-slate-500">Location</p>
+                <p className="mt-2 font-medium text-slate-900 flex items-center gap-2">
+                  <MapPin size={16} /> {job.location}
+                </p>
+              </div>
+              <div className="rounded-3xl bg-slate-50 p-5">
+                <p className="text-sm text-slate-500">Category</p>
+                <p className="mt-2 font-medium text-slate-900">
+                  {getCategoryName(job.categoryId) || 'Uncategorized'}
+                </p>
+              </div>
             </div>
-
-            {getCategoryName(job.categoryId) && (
-              <span className="inline-block text-sm px-4 py-2 bg-slate-100 text-slate-700">
-                {getCategoryName(job.categoryId)}
-              </span>
-            )}
           </div>
 
           {/* Job Description */}
-          <div className="bg-white border border-slate-200 p-6 mb-8">
-            <h2 className="text-xl font-semibold text-slate-900 mb-4 font-heading">
+          <div className="rounded-[28px] border border-slate-200 bg-white p-8 shadow-[0_10px_40px_rgba(15,23,42,0.08)]">
+            <h2 className="text-2xl font-semibold text-slate-900 mb-4 font-heading">
               Job Description
             </h2>
             <p
-              className="text-slate-600 leading-relaxed whitespace-pre-wrap"
+              className="text-slate-600 leading-8 whitespace-pre-wrap"
               data-testid="job-description"
             >
               {job.description}
             </p>
           </div>
 
-          {/* Posted By */}
-          <div className="bg-white border border-slate-200 p-6 mb-8">
-            <h2 className="text-xl font-semibold text-slate-900 mb-4 font-heading">
+          <div className="rounded-[28px] border border-slate-200 bg-white p-8 shadow-[0_10px_40px_rgba(15,23,42,0.08)]">
+            <h2 className="text-2xl font-semibold text-slate-900 mb-4 font-heading">
               Posted By
             </h2>
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-slate-200 rounded-full flex items-center justify-center">
+              <div className="w-14 h-14 bg-slate-200 rounded-full flex items-center justify-center">
                 <UserIcon size={24} className="text-slate-600" />
               </div>
               <div>
@@ -361,11 +370,11 @@ const JobDetail = () => {
 
           {/* Provider Bid Form */}
           {canBid && (
-            <div className="bg-white border border-slate-200 p-6 mb-8">
-              <h2 className="text-xl font-semibold text-slate-900 mb-4 font-heading">
+            <div className="rounded-[28px] border border-slate-200 bg-white p-8 shadow-[0_10px_40px_rgba(15,23,42,0.08)] mb-8">
+              <h2 className="text-2xl font-semibold text-slate-900 mb-4 font-heading">
                 Place Your Bid
               </h2>
-              <form onSubmit={handlePlaceBid} className="space-y-4">
+              <form onSubmit={handlePlaceBid} className="space-y-5">
                 <div>
                   <label
                     htmlFor="bidAmount"
@@ -379,7 +388,7 @@ const JobDetail = () => {
                     placeholder="Enter your bid amount"
                     value={bidAmount}
                     onChange={(e) => setBidAmount(e.target.value)}
-                    className="border border-slate-200 rounded-none px-4 py-3 w-full focus:ring-1 focus:ring-primary focus:border-primary outline-none transition-all"
+                    className="block w-full rounded-3xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-900 outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
                     data-testid="bid-amount-input"
                   />
                 </div>
@@ -393,11 +402,11 @@ const JobDetail = () => {
                   </label>
                   <textarea
                     id="bidMessage"
-                    rows="3"
+                    rows="4"
                     placeholder="Tell the client why you're the best fit..."
                     value={bidMessage}
                     onChange={(e) => setBidMessage(e.target.value)}
-                    className="border border-slate-200 rounded-none px-4 py-3 w-full focus:ring-1 focus:ring-primary focus:border-primary outline-none transition-all"
+                    className="block w-full rounded-3xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-900 outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
                     data-testid="bid-message-input"
                   />
                 </div>
@@ -405,7 +414,7 @@ const JobDetail = () => {
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="w-full bg-primary text-white rounded-none px-6 py-3 font-medium hover:bg-primary-hover transition-all disabled:opacity-50"
+                  className="w-full rounded-3xl bg-primary px-6 py-3 text-sm font-semibold text-white transition hover:bg-primary-hover disabled:opacity-50"
                   data-testid="place-bid-button"
                 >
                   {submitting ? 'Placing Bid...' : 'Place Bid'}
@@ -416,16 +425,16 @@ const JobDetail = () => {
 
           {/* Login Prompt */}
           {!user && job.status === 'open' && (
-            <div className="bg-blue-50 border border-blue-200 p-6 mb-8">
-              <h2 className="text-xl font-semibold text-slate-900 mb-4 font-heading">
+            <div className="rounded-[28px] border border-blue-200 bg-blue-50 p-8 shadow-[0_10px_40px_rgba(15,23,42,0.08)] mb-8">
+              <h2 className="text-2xl font-semibold text-slate-900 mb-4 font-heading">
                 Interested in this job?
               </h2>
-              <p className="text-slate-600 mb-4">
-                Sign in as a service provider to place your bid.
+              <p className="text-slate-600 mb-5">
+                Sign in as a service provider to place your bid and connect with the client.
               </p>
               <Link
                 to="/login"
-                className="inline-block bg-primary text-white rounded-none px-6 py-3 font-medium hover:bg-primary-hover transition-all"
+                className="inline-flex w-full items-center justify-center rounded-3xl bg-primary px-6 py-3 text-sm font-semibold text-white transition hover:bg-primary-hover"
               >
                 Sign In to Bid
               </Link>
@@ -434,20 +443,18 @@ const JobDetail = () => {
 
           {/* Provider's Existing Bid */}
           {userBid && (
-            <div className="bg-white border border-slate-200 p-6 mb-8">
-              <h2 className="text-xl font-semibold text-slate-900 mb-4 font-heading">
+            <div className="rounded-[28px] border border-slate-200 bg-white p-8 shadow-[0_10px_40px_rgba(15,23,42,0.08)] mb-8">
+              <h2 className="text-2xl font-semibold text-slate-900 mb-4 font-heading">
                 Your Bid
               </h2>
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <div className="text-2xl font-bold text-slate-900">
-                    ₹{userBid.amount}
-                  </div>
+                  <div className="text-3xl font-bold text-slate-900">₹{userBid.amount}</div>
                   {userBid.message && (
                     <p className="text-slate-600 mt-2">{userBid.message}</p>
                   )}
                 </div>
-                <span className={`px-3 py-1 text-xs font-medium ${
+                <span className={`inline-flex rounded-full px-4 py-2 text-sm font-semibold ${
                   userBid.status === 'accepted' ? 'bg-success text-white' :
                   userBid.status === 'rejected' ? 'bg-danger text-white' :
                   'bg-warning text-white'
@@ -462,7 +469,7 @@ const JobDetail = () => {
           {canMarkComplete && (
             <button
               onClick={handleMarkComplete}
-              className="w-full bg-success text-white rounded-none px-6 py-3 font-medium hover:bg-success/90 transition-all mb-8"
+              className="w-full rounded-3xl bg-success px-6 py-3 text-sm font-semibold text-white transition hover:bg-success/90 mb-8"
               data-testid="mark-complete-button"
             >
               Mark Job as Complete
@@ -471,26 +478,26 @@ const JobDetail = () => {
 
           {/* Payment Loading State */}
           {paymentLoading && (
-            <div className="bg-blue-50 border border-blue-200 p-4 mb-8 text-center">
-              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary mx-auto mb-2"></div>
+            <div className="rounded-[28px] border border-blue-200 bg-blue-50 p-6 text-center mb-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-3"></div>
               <p className="text-slate-600 text-sm">Initializing payment gateway...</p>
             </div>
           )}
 
           {/* Bids List for Seeker */}
           {isOwner && bids.length > 0 && (
-            <div className="bg-white border border-slate-200 p-6">
-              <h2 className="text-xl font-semibold text-slate-900 mb-4 font-heading">
+            <div className="rounded-[28px] border border-slate-200 bg-white p-8 shadow-[0_10px_40px_rgba(15,23,42,0.08)]">
+              <h2 className="text-2xl font-semibold text-slate-900 mb-6 font-heading">
                 Bids Received ({bids.length})
               </h2>
               <div className="space-y-4">
                 {bids.map((bid) => (
                   <div
                     key={bid._id}
-                    className="border border-slate-200 p-4"
+                    className="rounded-3xl border border-slate-200 bg-slate-50 p-5"
                     data-testid={`bid-${bid._id}`}
                   >
-                    <div className="flex items-start justify-between mb-3">
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-3">
                       <Link
                         to={`/provider/${bid.providerId._id || bid.providerId}`}
                         className="flex items-center gap-3 hover:text-primary transition-colors"
@@ -525,7 +532,7 @@ const JobDetail = () => {
                       <button
                         onClick={() => handleAcceptBid(bid._id)}
                         disabled={paymentLoading}
-                        className="flex items-center gap-2 bg-primary text-white rounded-none px-6 py-2 font-medium hover:bg-primary-hover transition-all disabled:opacity-50"
+                          className="inline-flex items-center gap-2 rounded-3xl bg-primary px-5 py-2 text-sm font-semibold text-white transition hover:bg-primary-hover disabled:opacity-50"
                         data-testid={`accept-bid-${bid._id}`}
                       >
                         <Check size={18} />

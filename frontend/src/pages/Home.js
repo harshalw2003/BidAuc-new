@@ -1,11 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Search, Plus, Briefcase } from 'lucide-react';
+import { Search, Plus, Briefcase, MapPin, DollarSign, Star } from 'lucide-react';
 import Header from '../components/Header';
 import { useAuth } from '../context/AuthContext';
 import api from '../api';
 import { toast } from '../utils/toast';
-// import image from ../static/Assets/
 
 const Home = () => {
   const [categories, setCategories] = useState([]);
@@ -19,7 +18,7 @@ const Home = () => {
 
   const fetchCategories = async () => {
     try {
-      const response = await api.get('/api/categories');
+      const response = await api.get('/api/categories/');
       console.log('Fetched categories from Home:', response.data);
       if (response.data && response.data.length > 0) {
         console.log('Category structure:', JSON.stringify(response.data[0], null, 2));
@@ -52,95 +51,218 @@ const Home = () => {
   };
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
       <Header />
 
       {/* Hero Section */}
-      <section className="py-8 md:py-16 px-6 md:px-12 border-b border-slate-200">
+      <section className="pt-12 md:pt-20 pb-16 md:pb-24 px-6 md:px-12">
         <div className="max-w-6xl mx-auto">
-          <div className="grid md:grid-cols-2 gap-12 items-center">
-            <div>
-              <h1 className="text-4xl md:text-5xl font-bold text-slate-900 mb-4 font-heading tracking-tight" data-testid="hero-heading">
-                Connect with Skilled Service Providers
-              </h1>
-              <p className="text-base text-slate-600 mb-8 leading-relaxed">
-                Find reliable professionals for all your home and business needs. Post jobs or offer your services to earn.
-              </p>
-              
-              {user?.role === 'seeker' ? (
-                <Link
-                  to="/post-job"
-                  className="inline-flex items-center gap-2 bg-primary text-white rounded-none px-6 py-3 font-medium hover:bg-primary-hover transition-all"
-                  data-testid="post-job-cta"
-                >
-                  <Plus size={20} />
-                  Post a Job
-                </Link>
-              ) : (
-                <Link
-                  to="/jobs"
-                  className="inline-flex items-center gap-2 bg-primary text-white rounded-none px-6 py-3 font-medium hover:bg-primary-hover transition-all"
-                  data-testid="browse-jobs-cta"
-                >
-                  <Briefcase size={20} />
-                  Browse Jobs
-                </Link>
-              )}
+          {/* Headline */}
+          <div className="text-center mb-12">
+            <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-2 mb-6">
+              <span className="w-2 h-2 rounded-full bg-primary"></span>
+              <span className="text-sm font-semibold text-primary">
+                {!user ? 'Simple. Fast. Reliable.' : user.role === 'seeker' ? 'Post & Hire' : 'Earn & Grow'}
+              </span>
             </div>
-            <div>
-              <img
-                src="https://static.prod-images.emergentagent.com/jobs/a65215cc-1af9-49fb-adba-a050f0ccd8b2/images/fc8a483a1029c17d2c341ffba68f1db4a768d6245b1d71b75fb55ded482c0969.png"
-                alt="Services illustration"
-                className="w-full"
-              />
+            
+            {!user ? (
+              <>
+                <h1 className="text-4xl md:text-6xl font-bold text-slate-900 mb-4 font-heading tracking-tight leading-tight" data-testid="hero-heading">
+                  Find trusted professionals{' '}
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-blue-600">
+                    for every task
+                  </span>
+                </h1>
+                <p className="text-base md:text-lg text-slate-600 max-w-2xl mx-auto leading-relaxed">
+                  Connect with vetted service providers, get instant quotes, and complete your projects with confidence.
+                </p>
+              </>
+            ) : user.role === 'seeker' ? (
+              <>
+                <h1 className="text-4xl md:text-6xl font-bold text-slate-900 mb-4 font-heading tracking-tight leading-tight" data-testid="hero-heading">
+                  Post a job and find{' '}
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-blue-600">
+                    the perfect match
+                  </span>
+                </h1>
+                <p className="text-base md:text-lg text-slate-600 max-w-2xl mx-auto leading-relaxed">
+                  Describe your project, get quotes from qualified professionals, and hire the best fit for your needs.
+                </p>
+              </>
+            ) : (
+              <>
+                <h1 className="text-4xl md:text-6xl font-bold text-slate-900 mb-4 font-heading tracking-tight leading-tight" data-testid="hero-heading">
+                  Grow your business and{' '}
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-blue-600">
+                    earn more
+                  </span>
+                </h1>
+                <p className="text-base md:text-lg text-slate-600 max-w-2xl mx-auto leading-relaxed">
+                  Browse open opportunities, showcase your skills, and build a thriving service business.
+                </p>
+              </>
+            )}
+          </div>
+
+          {/* Hero Action Panel */}
+          <div className="mb-16">
+            <div className="bg-white rounded-[24px] p-6 shadow-[0_20px_50px_rgba(15,23,42,0.1)] border border-slate-100 max-w-5xl mx-auto">
+              <div className="grid gap-4 lg:grid-cols-[1.5fr_1fr] items-center">
+                <div>
+                  <label className="text-xs uppercase tracking-[0.24em] text-slate-500 font-semibold mb-3 block">
+                    Search for services
+                  </label>
+                  <div className="relative">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
+                    <input
+                      type="text"
+                      placeholder="Search for services or jobs..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="w-full rounded-full border border-slate-200 bg-slate-50 px-5 py-4 pl-12 text-slate-900 outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+                      data-testid="search-input"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 self-end">
+                  {user?.role === 'seeker' ? (
+                    <button
+                      type="button"
+                      onClick={() => navigate('/post-job')}
+                      className="h-14 w-full rounded-full bg-primary px-5 text-sm font-semibold text-white transition hover:bg-primary-hover"
+                    >
+                      Post a Job
+                    </button>
+                  ) : user?.role === 'provider' ? (
+                    <button
+                      type="button"
+                      onClick={() => navigate('/jobs')}
+                      className="h-14 w-full rounded-full bg-primary px-5 text-sm font-semibold text-white transition hover:bg-primary-hover"
+                    >
+                      View Jobs
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => navigate('/jobs')}
+                      className="h-14 w-full rounded-full bg-primary px-5 text-sm font-semibold text-white transition hover:bg-primary-hover"
+                    >
+                      Browse Jobs
+                    </button>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={() => navigate('/categories')}
+                    className="h-14 w-full rounded-full border border-slate-200 bg-slate-50 px-5 text-sm font-semibold text-slate-900 transition hover:border-primary hover:text-primary"
+                  >
+                    View Categories
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* Search Bar */}
-          <form onSubmit={handleSearch} className="mt-12">
-            <div className="relative max-w-2xl mx-auto">
-              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400" size={20} />
-              <input
-                type="text"
-                placeholder="Search for services or jobs..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="border border-slate-200 rounded-none px-4 py-4 pl-12 w-full focus:ring-1 focus:ring-primary focus:border-primary outline-none transition-all"
-                data-testid="search-input"
+          {/* Illustration and Stats */}
+          <div className="grid md:grid-cols-2 gap-12 items-center">
+            <div className="rounded-[28px] overflow-hidden shadow-[0_20px_50px_rgba(15,23,42,0.12)] border border-slate-100">
+              <img
+                src="https://static.prod-images.emergentagent.com/jobs/a65215cc-1af9-49fb-adba-a050f0ccd8b2/images/fc8a483a1029c17d2c341ffba68f1db4a768d6245b1d71b75fb55ded482c0969.png"
+                alt="Services illustration"
+                className="w-full h-auto object-cover"
               />
             </div>
-          </form>
+
+            <div className="space-y-5">
+              <div className="bg-white rounded-[24px] p-6 border border-slate-100 shadow-sm hover:shadow-md transition">
+                <div className="flex items-start gap-4">
+                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-green-50">
+                    <span className="text-2xl">✓</span>
+                  </div>
+                  <div>
+                    <p className="text-sm uppercase tracking-[0.24em] text-slate-500 font-semibold mb-1">Active Professionals</p>
+                    <p className="text-3xl font-bold text-slate-900">10,000+</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-[24px] p-6 border border-slate-100 shadow-sm hover:shadow-md transition">
+                <div className="flex items-start gap-4">
+                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50">
+                    <span className="text-2xl">⭐</span>
+                  </div>
+                  <div>
+                    <p className="text-sm uppercase tracking-[0.24em] text-slate-500 font-semibold mb-1">Average Rating</p>
+                    <p className="text-3xl font-bold text-slate-900">4.8</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-[24px] p-6 border border-slate-100 shadow-sm hover:shadow-md transition">
+                <div className="flex items-start gap-4">
+                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-purple-50">
+                    <span className="text-2xl">✨</span>
+                  </div>
+                  <div>
+                    <p className="text-sm uppercase tracking-[0.24em] text-slate-500 font-semibold mb-1">Jobs Completed</p>
+                    <p className="text-3xl font-bold text-slate-900">50,000+</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
       {/* Categories Section */}
-      <section className="py-16 md:py-24 px-6 md:px-12">
+      <section className="py-16 md:py-24 px-6 md:px-12 bg-white border-t border-slate-100">
         <div className="max-w-6xl mx-auto">
-          <div className="flex items-center justify-between mb-8">
-            <h2 className="text-2xl md:text-3xl font-semibold text-slate-900 font-heading tracking-tight">Service Categories</h2>
-            <Link to="/categories" className="text-primary hover:text-primary-hover text-sm font-medium" data-testid="view-all-categories">
-              View All →
-            </Link>
+          <div className="text-center mb-12">
+            <p className="text-sm uppercase tracking-[0.3em] text-primary font-semibold mb-3">
+              Popular categories
+            </p>
+            <h2 className="text-3xl md:text-4xl font-bold text-slate-900 font-heading tracking-tight">Featured services</h2>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6" data-testid="category-grid">
-            {categories.slice(0, 10).map((category) => (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-10" data-testid="category-grid">
+            {categories.slice(0, 3).map((category) => (
               <Link
                 key={category._id}
                 to={`/jobs?category=${category._id}`}
-                className="bg-white border border-slate-200 p-6 hover:border-primary transition-colors duration-200 cursor-pointer"
+                className="group overflow-hidden rounded-[24px] border border-slate-200 bg-white p-6 shadow-[0_10px_30px_rgba(15,23,42,0.08)] transition-all duration-300 hover:-translate-y-2 hover:shadow-[0_20px_50px_rgba(15,23,42,0.12)]"
                 data-testid={`category-card-${category.name.toLowerCase().replace(/\s+/g, '-')}`}
               >
-                <img
-                  // src={'../static/Assets/categoryImages/applianceRepair.jpg' + category.image || '🔧'}
-                  src={category.icon}
-                  alt={category.name}
-                  className="w-14 h-14 mb-3 object-cover rounded-full"
-                />
-                <h3 className="font-medium text-slate-900 mb-1">{category.name}</h3>
-                <p className="text-sm text-slate-600">{category.description}</p>
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 text-primary shadow-sm">
+                    <img
+                      src={category.icon}
+                      alt={category.name}
+                      className="h-10 w-10 object-cover rounded-lg"
+                    />
+                  </div>
+                  <span className="text-xs uppercase tracking-[0.24em] text-slate-400 font-semibold">
+                    {category.name}
+                  </span>
+                </div>
+                <h3 className="text-lg font-semibold text-slate-900 mb-2">{category.name}</h3>
+                <p className="text-sm leading-5 text-slate-600 line-clamp-2">{category.description}</p>
+                <div className="mt-5 inline-flex items-center text-sm font-semibold text-primary hover:gap-2 transition-all">
+                  Explore <span className="ml-1">→</span>
+                </div>
               </Link>
             ))}
+          </div>
+
+          <div className="text-center">
+            <Link 
+              to="/categories" 
+              className="inline-flex items-center justify-center rounded-full border border-primary/20 bg-primary/5 px-6 py-3 text-sm font-semibold text-primary transition hover:bg-primary/10"
+              data-testid="view-all-categories"
+            >
+              View all categories
+            </Link>
           </div>
         </div>
       </section>

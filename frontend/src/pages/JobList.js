@@ -22,7 +22,7 @@ const JobList = () => {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const res = await api.get('/api/categories');
+        const res = await api.get('/api/categories/');
         setCategories(res.data || []);
       } catch (err) {
         // ignore
@@ -43,7 +43,7 @@ const JobList = () => {
   const fetchJobs = async () => {
     setLoading(true);
     try {
-      let endpoint = '/api/jobs';
+      let endpoint = '/api/jobs/';
       const params = new URLSearchParams();
 
       if (user) {
@@ -113,26 +113,37 @@ const JobList = () => {
   };
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-slate-50">
       <Header />
 
       <div className="py-16 md:py-24 px-6 md:px-12">
         <div className="max-w-6xl mx-auto">
-          <h1 className="text-4xl md:text-5xl font-bold text-slate-900 mb-8 font-heading tracking-tight" data-testid="jobs-heading">
-            {!user ? 'Available Jobs' : user.role === 'seeker' ? 'My Jobs' : 'Available Jobs'}
-          </h1>
+          <div className="mb-10">
+            <p className="text-sm uppercase tracking-[0.3em] text-primary font-semibold mb-3">
+              {user ? (user.role === 'seeker' ? 'Seeker dashboard' : 'Provider dashboard') : 'Browse jobs'}
+            </p>
+            <h1 className="text-4xl md:text-5xl font-bold text-slate-900 mb-4 font-heading tracking-tight" data-testid="jobs-heading">
+              {!user ? 'Available Jobs' : user.role === 'seeker' ? 'My Jobs' : 'Available Jobs'}
+            </h1>
+            <p className="max-w-3xl text-base text-slate-600 leading-7">
+              {user
+                ? user.role === 'seeker'
+                  ? 'Track your job posts, active contracts, and completed work in one place.'
+                  : 'Browse open jobs or manage your assignments with polished summaries and quick access.'
+                : 'Discover open jobs and find the right opportunities that fit your skills and schedule.'}
+            </p>
+          </div>
 
-          {/* Tabs */}
           {user ? (
-          <div className="flex gap-4 mb-8 border-b border-slate-200">
+          <div className="flex flex-wrap gap-3 mb-10">
             {user.role === 'seeker' ? (
               <>
                 <button
                   onClick={() => setActiveTab('all')}
-                  className={`pb-4 px-4 font-medium transition-all border-b-2 ${
+                  className={`rounded-full px-5 py-3 text-sm font-semibold transition ${
                     activeTab === 'all'
-                      ? 'border-primary text-primary'
-                      : 'border-transparent text-slate-600 hover:text-slate-900'
+                      ? 'bg-primary text-white shadow-sm'
+                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                   }`}
                   data-testid="tab-my-posted"
                 >
@@ -140,10 +151,10 @@ const JobList = () => {
                 </button>
                 <button
                   onClick={() => setActiveTab('active')}
-                  className={`pb-4 px-4 font-medium transition-all border-b-2 ${
+                  className={`rounded-full px-5 py-3 text-sm font-semibold transition ${
                     activeTab === 'active'
-                      ? 'border-primary text-primary'
-                      : 'border-transparent text-slate-600 hover:text-slate-900'
+                      ? 'bg-primary text-white shadow-sm'
+                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                   }`}
                   data-testid="tab-active"
                 >
@@ -151,10 +162,10 @@ const JobList = () => {
                 </button>
                 <button
                   onClick={() => setActiveTab('completed')}
-                  className={`pb-4 px-4 font-medium transition-all border-b-2 ${
+                  className={`rounded-full px-5 py-3 text-sm font-semibold transition ${
                     activeTab === 'completed'
-                      ? 'border-primary text-primary'
-                      : 'border-transparent text-slate-600 hover:text-slate-900'
+                      ? 'bg-primary text-white shadow-sm'
+                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                   }`}
                   data-testid="tab-completed"
                 >
@@ -165,10 +176,10 @@ const JobList = () => {
               <>
                 <button
                   onClick={() => setActiveTab('browse')}
-                  className={`pb-4 px-4 font-medium transition-all border-b-2 ${
+                  className={`rounded-full px-5 py-3 text-sm font-semibold transition ${
                     activeTab === 'browse'
-                      ? 'border-primary text-primary'
-                      : 'border-transparent text-slate-600 hover:text-slate-900'
+                      ? 'bg-primary text-white shadow-sm'
+                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                   }`}
                   data-testid="tab-browse"
                 >
@@ -176,10 +187,10 @@ const JobList = () => {
                 </button>
                 <button
                   onClick={() => setActiveTab('active')}
-                  className={`pb-4 px-4 font-medium transition-all border-b-2 ${
+                  className={`rounded-full px-5 py-3 text-sm font-semibold transition ${
                     activeTab === 'active'
-                      ? 'border-primary text-primary'
-                      : 'border-transparent text-slate-600 hover:text-slate-900'
+                      ? 'bg-primary text-white shadow-sm'
+                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                   }`}
                   data-testid="tab-my-active"
                 >
@@ -187,10 +198,10 @@ const JobList = () => {
                 </button>
                 <button
                   onClick={() => setActiveTab('completed')}
-                  className={`pb-4 px-4 font-medium transition-all border-b-2 ${
+                  className={`rounded-full px-5 py-3 text-sm font-semibold transition ${
                     activeTab === 'completed'
-                      ? 'border-primary text-primary'
-                      : 'border-transparent text-slate-600 hover:text-slate-900'
+                      ? 'bg-primary text-white shadow-sm'
+                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                   }`}
                   data-testid="tab-my-completed"
                 >
@@ -201,52 +212,62 @@ const JobList = () => {
           </div>
           ) : null}
 
-          {/* Job List */}
           {loading ? (
             <div className="text-center py-12">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
             </div>
           ) : jobs.length === 0 ? (
-            <div className="text-center py-12" data-testid="no-jobs-message">
-              <p className="text-slate-600">No jobs found</p>
+            <div className="text-center py-16" data-testid="no-jobs-message">
+              <p className="text-slate-600 text-lg">No jobs found</p>
             </div>
           ) : (
-            <div className="grid gap-6" data-testid="jobs-list">
+            <div className="grid gap-6 md:grid-cols-2" data-testid="jobs-list">
               {jobs.map((job) => (
                 <Link
                   key={job._id}
                   to={`/jobs/${job._id}`}
-                  className="bg-white border border-slate-200 p-6 hover:border-primary transition-colors duration-200 cursor-pointer"
+                  className="group overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-[0_10px_40px_rgba(15,23,42,0.08)] transition-transform duration-300 hover:-translate-y-1 hover:border-primary"
                   data-testid={`job-card-${job._id}`}
                 >
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex-1">
-                      <h3 className="text-xl font-medium text-slate-900 mb-2 font-heading">{job.title}</h3>
-                      <div className="flex flex-wrap items-center gap-4 text-sm text-slate-600">
-                        <span className="flex items-center gap-1">
-                          <MapPin size={16} />
-                          {job.location}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <DollarSign size={16} />
+                  <div className="p-7">
+                    <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
+                      <div className="space-y-4">
+                        <div className="flex flex-wrap items-center gap-3">
+                          {getCategoryName(job.categoryId) && (
+                            <span className="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-700">
+                              {getCategoryName(job.categoryId)}
+                            </span>
+                          )}
+                          <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${getStatusColor(job.status)}`}>
+                            {job.status.toUpperCase()}
+                          </span>
+                        </div>
+
+                        <h3 className="text-2xl font-semibold text-slate-900 font-heading">{job.title}</h3>
+
+                        <div className="flex flex-wrap gap-4 text-sm text-slate-500">
+                          <span className="inline-flex items-center gap-1">
+                            <MapPin size={16} />
+                            {job.location}
+                          </span>
+                          <span className="inline-flex items-center gap-1">
+                            <Clock size={16} />
+                            {formatDate(job.createdAt)}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex-shrink-0">
+                        <span className="inline-flex rounded-full bg-primary/10 px-4 py-2 text-sm font-semibold text-primary">
                           ₹{job.budget}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Clock size={16} />
-                          {formatDate(job.createdAt)}
                         </span>
                       </div>
                     </div>
-                    <span className={`px-3 py-1 text-xs font-medium ${getStatusColor(job.status)}`}>
-                      {job.status.toUpperCase()}
-                    </span>
+
+                    <p className="text-slate-600 leading-7 mt-6">
+                      {job.description}
+                    </p>
                   </div>
-                  <p className="text-slate-600 line-clamp-2 mb-4">{job.description}</p>
-                  {getCategoryName(job.categoryId) && (
-                    <span className="inline-block text-xs px-3 py-1 bg-slate-100 text-slate-700">
-                      {getCategoryName(job.categoryId)}
-                    </span>
-                  )}
                 </Link>
               ))}
             </div>
