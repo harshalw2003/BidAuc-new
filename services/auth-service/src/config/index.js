@@ -11,7 +11,8 @@ const config = {
 
   jwt: {
     secret: process.env.JWT_SECRET || 'your-secret-key-change-in-production',
-    
+     accessExpiry: process.env.JWT_ACCESS_EXPIRY,  // ← verify this line exists
+  refreshExpiry: process.env.JWT_REFRESH_EXPIRY  // ← verify this line exists
   },
 
   twilio: {
