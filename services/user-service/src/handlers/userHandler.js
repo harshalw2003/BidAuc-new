@@ -4,35 +4,58 @@ const User = require('../models/User');
 
 const handleUserRegistered = async (data) => {
   try {
-    // Check if user already exists — idempotency
-    const existingUser = await User.findById(data._id);
+    // Upsert — insert if not exists, update if exists
+    // This handles both new users and backfill of existing users
+    await User.findOneAndUpdate(
+      { _id: data._id },
+      {
+        $set: {
+          name: data.name,
+          phone: data.phone,
+          password: data.phone,
+          role: data.role,
+          profilePhoto: data.profilePhoto || '',
+          address: data.address || '',
+          bio: data.bio || '',
+          skills: data.skills || [],
+          createdAt: data.createdAt
+        }
+      },
+      {
+        upsert: true,    // create if not exists
+        new: true,       // return updated document
+        setDefaultsOnInsert: true
+      }
+    );
 
-    if (existingUser) {
-      console.log(`ℹ️  User ${data._id} already exists in user-service DB`);
-      return;
-    }
-
-    // Create user in user-service database
-    const user = new User({
-      _id: data._id,
-      name: data.name,
-      phone: data.phone,
-      password: data.phone, // placeholder — user-service never authenticates
-      role: data.role,
-      profilePhoto: data.profilePhoto || '',
-      address: data.address || '',
-      bio: data.bio || '',
-      skills: data.skills || [],
-      createdAt: data.createdAt
-    });
-
-    await user.save();
-    console.log(`✅ User ${data._id} synced to user-service DB`);
-
+    console.log(`✅ User ${data._id} (${data.name}) synced to user-service DB`);
   } catch (error) {
     console.error('❌ Failed to sync user:', error.message);
-    throw error; // Rethrow so message gets nacked and retried
+    throw error;
   }
 };
 
-module.exports = { handleUserRegistered };
+const handleUserUpdated = async (data) => {
+  try {
+    await User.findOneAndUpdate(
+      { _id: data._id },
+      {
+        $set: {
+          name: data.name,
+          profilePhoto: data.profilePhoto || '',
+          address: data.address || '',
+          bio: data.bio || '',
+          skills: data.skills || []
+        }
+      },
+      { new: true }
+    );
+
+    console.log(`✅ User ${data._id} profile updated in user-service DB`);
+  } catch (error) {
+    console.error('❌ Failed to update user:', error.message);
+    throw error;
+  }
+};
+
+module.exports = { handleUserRegistered, handleUserUpdated };
