@@ -5,8 +5,28 @@ const router = express.Router();
 const Bid = require('../models/Bid');
 const authMiddleware = require('../middleware/auth');
 const jobServiceClient = require('../clients/jobServiceClient');
+const userServiceClient = require('../clients/userServiceClient');
+const { publishEvent } = require('../config/rabbitmq');
 
-// Place a bid — provider only
+// ─── Helper: Attach provider details to bids ──────────────
+const attachProviderDetails = async (bids) => {
+  if (!bids || bids.length === 0) return bids;
+
+  const providerIds = [...new Set(bids.map(b => b.providerId.toString()))];
+  const { data: usersMap } = await userServiceClient.getUsers(providerIds);
+
+  return bids.map(bid => {
+    const bidObj = bid.toObject();
+    bidObj.providerId = usersMap[bid.providerId.toString()] || {
+      _id: bid.providerId,
+      name: 'Unknown Provider',
+      phone: ''
+    };
+    return bidObj;
+  });
+};
+
+// ─── Place a Bid — provider only ──────────────────────────
 router.post('/', authMiddleware, async (req, res) => {
   try {
     if (req.user.role !== 'provider') {
@@ -19,7 +39,6 @@ router.post('/', authMiddleware, async (req, res) => {
       return res.status(400).json({ message: 'Job ID and amount are required' });
     }
 
-    // Verify job exists and is open via job-service
     const { data: job, error: jobError } = await jobServiceClient.getJob(jobId);
 
     if (jobError) {
@@ -30,12 +49,7 @@ router.post('/', authMiddleware, async (req, res) => {
       return res.status(400).json({ message: 'Job is no longer accepting bids' });
     }
 
-    // Check if provider already bid on this job
-    const existingBid = await Bid.findOne({
-      jobId,
-      providerId: req.user._id
-    });
-
+    const existingBid = await Bid.findOne({ jobId, providerId: req.user._id });
     if (existingBid) {
       return res.status(400).json({
         message: 'You have already placed a bid on this job'
@@ -51,16 +65,18 @@ router.post('/', authMiddleware, async (req, res) => {
 
     await bid.save();
 
-    res.status(201).json(bid);
+    // Attach provider details to response
+    const [enrichedBid] = await attachProviderDetails([bid]);
+
+    res.status(201).json(enrichedBid);
   } catch (error) {
     res.status(500).json({ message: 'Error placing bid', error: error.message });
   }
 });
 
-// Get all bids for a job — seeker only
+// ─── Get All Bids for a Job — seeker only ─────────────────
 router.get('/job/:jobId', authMiddleware, async (req, res) => {
   try {
-    // Verify job belongs to this seeker
     const { data: job, error: jobError } = await jobServiceClient.getJob(
       req.params.jobId
     );
@@ -69,20 +85,25 @@ router.get('/job/:jobId', authMiddleware, async (req, res) => {
       return res.status(503).json({ message: jobError });
     }
 
-    if (job.seekerId.toString() !== req.user._id.toString()) {
+    if (job.seekerId._id
+      ? job.seekerId._id.toString() !== req.user._id.toString()
+      : job.seekerId.toString() !== req.user._id.toString()
+    ) {
       return res.status(403).json({ message: 'Unauthorized' });
     }
 
     const bids = await Bid.find({ jobId: req.params.jobId })
       .sort({ createdAt: -1 });
 
-    res.json(bids);
+    const enrichedBids = await attachProviderDetails(bids);
+
+    res.json(enrichedBids);
   } catch (error) {
     res.status(500).json({ message: 'Error fetching bids', error: error.message });
   }
 });
 
-// Get provider's own bids
+// ─── Get Provider's Own Bids ──────────────────────────────
 router.get('/my', authMiddleware, async (req, res) => {
   try {
     if (req.user.role !== 'provider') {
@@ -92,13 +113,15 @@ router.get('/my', authMiddleware, async (req, res) => {
     const bids = await Bid.find({ providerId: req.user._id })
       .sort({ createdAt: -1 });
 
-    res.json(bids);
+    const enrichedBids = await attachProviderDetails(bids);
+
+    res.json(enrichedBids);
   } catch (error) {
     res.status(500).json({ message: 'Error fetching bids', error: error.message });
   }
 });
 
-// Accept a bid — seeker only
+// ─── Accept a Bid — seeker only ───────────────────────────
 router.patch('/:id/accept', authMiddleware, async (req, res) => {
   try {
     if (req.user.role !== 'seeker') {
@@ -110,16 +133,17 @@ router.patch('/:id/accept', authMiddleware, async (req, res) => {
       return res.status(404).json({ message: 'Bid not found' });
     }
 
-    // Verify job exists and belongs to this seeker
-    const { data: job, error: jobError } = await jobServiceClient.getJob(
-      bid.jobId
-    );
+    const { data: job, error: jobError } = await jobServiceClient.getJob(bid.jobId);
 
     if (jobError) {
       return res.status(503).json({ message: jobError });
     }
 
-    if (job.seekerId.toString() !== req.user._id.toString()) {
+    const seekerId = job.seekerId._id
+      ? job.seekerId._id.toString()
+      : job.seekerId.toString();
+
+    if (seekerId !== req.user._id.toString()) {
       return res.status(403).json({ message: 'Unauthorized' });
     }
 
@@ -127,17 +151,14 @@ router.patch('/:id/accept', authMiddleware, async (req, res) => {
       return res.status(400).json({ message: 'Job is no longer accepting bids' });
     }
 
-    // Accept this bid
     bid.status = 'accepted';
     await bid.save();
 
-    // Reject all other bids for this job
     await Bid.updateMany(
       { jobId: bid.jobId, _id: { $ne: bid._id } },
       { status: 'rejected' }
     );
 
-    // Update job status via job-service
     const { error: updateError } = await jobServiceClient.updateJobStatus(
       bid.jobId,
       'active',
@@ -145,17 +166,26 @@ router.patch('/:id/accept', authMiddleware, async (req, res) => {
     );
 
     if (updateError) {
-      // Critical: bid accepted but job status not updated
-      // Log this for manual intervention
-      // In Phase 2 this becomes a RabbitMQ event for reliability
       console.error(
-        `CRITICAL: Bid ${bid._id} accepted but job ${bid.jobId} status update failed:`,
+        `CRITICAL: Bid ${bid._id} accepted but job status update failed:`,
         updateError
       );
     }
 
+    // Publish event to RabbitMQ
+    publishEvent('bid.accepted', {
+      bidId: bid._id,
+      jobId: bid.jobId,
+      providerId: bid.providerId,
+      seekerId: req.user._id,
+      amount: bid.amount,
+      jobTitle: job.title
+    });
+
+    const [enrichedBid] = await attachProviderDetails([bid]);
+
     res.json({
-      bid,
+      bid: enrichedBid,
       message: 'Bid accepted. Proceed to payment.'
     });
   } catch (error) {
@@ -163,7 +193,7 @@ router.patch('/:id/accept', authMiddleware, async (req, res) => {
   }
 });
 
-// Internal route — called by payment-service
+// ─── Internal: Get Single Bid ─────────────────────────────
 router.get('/:id', async (req, res) => {
   try {
     const bid = await Bid.findById(req.params.id);
