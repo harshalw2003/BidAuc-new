@@ -12,7 +12,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-producti
 
 // Generate tokens
 const generateTokens = (userId) => {
-  const accessToken = jwt.sign({ userId }, JWT_SECRET, { expiresIn: '15m' });
+  const accessToken = jwt.sign({ userId }, JWT_SECRET, { expiresIn: '7d' });
   const refreshToken = jwt.sign({ userId }, JWT_SECRET, { expiresIn: '7d' });
   return { accessToken, refreshToken };
 };
@@ -48,15 +48,15 @@ router.post('/send-otp', async (req, res) => {
     console.log('Preparing to send OTP to:', phone);
     // console.log(otpClient);
 
-    otpClient.messages
-    .create({
-        body: 'Your OTP for BidAuc is: ' + otp,
-        from: process.env.SEND_OTP_FROM_NUMBER,
-        to: '+91' + phone
-    })
-    .then(message => console.log(message.sid));
+    // otpClient.messages
+    // .create({
+    //     body: 'Your OTP for BidAuc is: ' + otp,
+    //     from: process.env.SEND_OTP_FROM_NUMBER,
+    //     to: '+91' + phone
+    // })
+    // .then(message => console.log(message.sid));
 
-  
+  console.log(`OTP for ${phone}: ${otp} (This should be sent via SMS in production)`);
     // Return success message (don't expose OTP in production)
     res.json({ 
       message: 'OTP sent successfully',
@@ -104,7 +104,7 @@ router.post('/verify-otp', async (req, res) => {
         httpOnly: true,
         secure: false,
         sameSite: 'lax',
-        maxAge: 15 * 60 * 1000
+        maxAge: 7 * 24 * 60 * 60 * 1000
       });
       
       res.cookie('refresh_token', refreshToken, {
@@ -163,7 +163,7 @@ router.post('/register', async (req, res) => {
       httpOnly: true,
       secure: false,
       sameSite: 'lax',
-      maxAge: 15 * 60 * 1000
+      maxAge: 7 * 24 * 60 * 60 * 1000
     });
     
     res.cookie('refresh_token', refreshToken, {
@@ -210,7 +210,7 @@ router.post('/refresh', (req, res) => {
       httpOnly: true,
       secure: false,
       sameSite: 'lax',
-      // maxAge: 15 * 60 * 1000 // 15 minutes
+      maxAge: 7 * 24 * 60 * 60 * 1000
     });
     
     res.json({ message: 'Token refreshed' });
