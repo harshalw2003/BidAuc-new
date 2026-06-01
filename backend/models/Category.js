@@ -1,12 +1,12 @@
 const mongoose = require('mongoose')
 
 const categorySchema = new mongoose.Schema({
-    categoryName: {
+    name: {
         type: String,
         required: true,
         // unique: true,
     },
-    image: {
+    icon: {
         type: String,
         required: true,
     },
