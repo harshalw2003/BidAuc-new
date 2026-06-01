@@ -1,0 +1,236 @@
+version: '3.8'
+
+# ─── Shared Configuration ─────────────────────────────────
+x-service-defaults: &service-defaults
+  restart: unless-stopped
+  networks:
+    - marketplace
+
+x-mongo-defaults: &mongo-defaults
+  image: mongo:7.0
+  restart: unless-stopped
+  networks:
+    - marketplace
+
+# ─── Services ─────────────────────────────────────────────
+services:
+
+  # ── Infrastructure ──────────────────────────────────────
+
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: rabbitmq
+    restart: unless-stopped
+    ports:
+      - "5672:5672"    # AMQP
+      - "15672:15672"  # Management UI
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    networks:
+      - marketplace
+
+  # ── MongoDB Instances (one per service) ─────────────────
+
+  mongo-auth:
+    <<: *mongo-defaults
+    container_name: mongo-auth
+    volumes:
+      - mongo-auth-data:/data/db
+
+  mongo-user:
+    <<: *mongo-defaults
+    container_name: mongo-user
+    volumes:
+      - mongo-user-data:/data/db
+
+  mongo-job:
+    <<: *mongo-defaults
+    container_name: mongo-job
+    volumes:
+      - mongo-job-data:/data/db
+
+  mongo-bid:
+    <<: *mongo-defaults
+    container_name: mongo-bid
+    volumes:
+      - mongo-bid-data:/data/db
+
+  mongo-payment:
+    <<: *mongo-defaults
+    container_name: mongo-payment
+    volumes:
+      - mongo-payment-data:/data/db
+
+  # ── Application Services ─────────────────────────────────
+
+  auth-service:
+    <<: *service-defaults
+    container_name: auth-service
+    build:
+      context: ./services/auth-service
+      dockerfile: Dockerfile
+      target: production
+    env_file:
+      - ./docker/env/auth-service.env
+    depends_on:
+      mongo-auth:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  user-service:
+    <<: *service-defaults
+    container_name: user-service
+    build:
+      context: ./services/user-service
+      dockerfile: Dockerfile
+      target: production
+    env_file:
+      - ./docker/env/user-service.env
+    depends_on:
+      mongo-user:
+        condition: service_started
+      rabbitmq:                        # ADD THIS
+        condition: service_healthy     # ADD THIS
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3002/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  job-service:
+    <<: *service-defaults
+    container_name: job-service
+    build:
+      context: ./services/job-service
+      dockerfile: Dockerfile
+      target: production
+    env_file:
+      - ./docker/env/job-service.env
+    depends_on:
+      mongo-job:
+        condition: service_started
+      user-service:           
+        condition: service_healthy
+
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3003/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  bid-service:
+    <<: *service-defaults
+    container_name: bid-service
+    build:
+      context: ./services/bid-service
+      dockerfile: Dockerfile
+      target: production
+    env_file:
+      - ./docker/env/bid-service.env
+    depends_on:
+      mongo-bid:
+        condition: service_started
+      rabbitmq:
+        condition: service_healthy
+      job-service:
+        condition: service_healthy
+      user-service:          
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3004/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  payment-service:
+    <<: *service-defaults
+    container_name: payment-service
+    build:
+      context: ./services/payment-service
+      dockerfile: Dockerfile
+      target: production
+    env_file:
+      - ./docker/env/payment-service.env
+    depends_on:
+      mongo-payment:
+        condition: service_started
+      bid-service:
+        condition: service_healthy
+      job-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3005/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  notification-service:
+    <<: *service-defaults
+    container_name: notification-service
+    build:
+      context: ./services/notification-service
+      dockerfile: Dockerfile
+      target: production
+    env_file:
+      - ./docker/env/notification-service.env
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+
+  # ── API Gateway ──────────────────────────────────────────
+
+  api-gateway:
+    image: nginx:alpine
+    container_name: api-gateway
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ./api-gateway/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      auth-service:
+        condition: service_healthy
+      user-service:
+        condition: service_healthy
+      job-service:
+        condition: service_healthy
+      bid-service:
+        condition: service_healthy
+      payment-service:
+        condition: service_healthy
+    networks:
+      - marketplace
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:80/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+# ─── Networks ─────────────────────────────────────────────
+networks:
+  marketplace:
+    driver: bridge
+
+# ─── Volumes ──────────────────────────────────────────────
+volumes:
+  mongo-auth-data:
+  mongo-user-data:
+  mongo-job-data:
+  mongo-bid-data:
+  mongo-payment-data:

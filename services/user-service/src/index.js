@@ -7,6 +7,8 @@ const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const config = require('./config');
 const connectDatabase = require('./config/database');
+const { connectConsumer } = require('./config/rabbitmq');
+const { handleUserRegistered } = require('./handlers/userHandler');
 const userRoutes = require('./routes/users');
 
 const app = express();
@@ -53,9 +55,21 @@ const gracefulShutdown = (signal) => {
 process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
+// ─── Message Router ───────────────────────────────────────
+const handleMessage = async (routingKey, data) => {
+  switch (routingKey) {
+    case 'user.registered':
+      await handleUserRegistered(data);
+      break;
+    default:
+      console.warn(`⚠️  Unknown routing key: ${routingKey}`);
+  }
+};
+
 // ─── Start Server ─────────────────────────────────────────
 const startServer = async () => {
   await connectDatabase();
+  await connectConsumer(handleMessage);
 
   app.listen(config.port, () => {
     console.log(`✅ User Service running on port ${config.port}`);
