@@ -9,6 +9,7 @@ import { toast } from '../utils/toast';
 const Home = () => {
   const [categories, setCategories] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
   const { user } = useAuth();
   const navigate = useNavigate();
 
@@ -32,9 +33,38 @@ const Home = () => {
 
   const handleSearch = (e) => {
     e.preventDefault();
-    if (searchQuery.trim()) {
-      navigate(`/jobs?search=${searchQuery}`);
+    if (!searchQuery.trim()) return;
+
+    if (searchResults.length > 0) {
+      const category = searchResults[0];
+      if (user?.role === 'seeker') {
+        navigate(`/post-job?category=${category._id}`);
+      } else {
+        navigate(`/jobs?category=${category._id}`);
+      }
+      return;
     }
+
+    navigate(`/jobs?search=${searchQuery}`);
+  };
+
+  const handleSearchChange = (e) => {
+    const value = e.target.value;
+    setSearchQuery(value);
+
+    if (!value.trim()) {
+      setSearchResults([]);
+      return;
+    }
+
+    const normalized = value.toLowerCase();
+    const filtered = categories.filter((category) => {
+      const name = category.name?.toLowerCase() || '';
+      const desc = category.description?.toLowerCase() || '';
+      return name.includes(normalized) || desc.includes(normalized);
+    });
+
+    setSearchResults(filtered.slice(0, 6));
   };
 
   const iconMap = {
@@ -111,15 +141,15 @@ const Home = () => {
               <div className="grid gap-4 lg:grid-cols-[1.5fr_1fr] items-center">
                 <div>
                   <label className="text-xs uppercase tracking-[0.24em] text-slate-500 font-semibold mb-3 block">
-                    Search for services
+                    Search for service categories
                   </label>
                   <div className="relative">
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
                     <input
                       type="text"
-                      placeholder="Search for services or jobs..."
+                      placeholder="Search for service categories, e.g., plumbing, tutoring..."
                       value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
+                      onChange={handleSearchChange}
                       className="w-full rounded-full border border-slate-200 bg-slate-50 px-5 py-4 pl-12 text-slate-900 outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
                       data-testid="search-input"
                     />
@@ -162,6 +192,36 @@ const Home = () => {
                   </button>
                 </div>
               </div>
+              {searchResults.length > 0 && (
+                <div className="mt-4 rounded-[20px] border border-slate-200 bg-slate-50 shadow-sm">
+                  <div className="divide-y divide-slate-200">
+                    {searchResults.map((category) => (
+                      <button
+                        key={category._id}
+                        type="button"
+                        onClick={() => {
+                          if (user?.role === 'seeker') {
+                            navigate(`/post-job?category=${category._id}`);
+                          } else {
+                            navigate(`/jobs?category=${category._id}`);
+                          }
+                        }}
+                        className="w-full text-left px-5 py-4 hover:bg-white transition"
+                      >
+                        <div className="flex items-center justify-between gap-4">
+                          <div>
+                            <p className="text-sm font-semibold text-slate-900">{category.name}</p>
+                            <p className="mt-1 text-sm text-slate-600 line-clamp-2">{category.description}</p>
+                          </div>
+                          <span className="text-xs uppercase tracking-[0.24em] text-primary font-semibold">
+                            {user?.role === 'seeker' ? 'Post Job' : 'View Jobs'}
+                          </span>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import Header from '../components/Header';
 import { useAuth } from '../context/AuthContext';
 import api from '../api';
@@ -17,6 +17,7 @@ const PostJob = () => {
   const [loading, setLoading] = useState(false);
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   useEffect(() => {
     if (user?.role !== 'seeker') {
@@ -26,6 +27,16 @@ const PostJob = () => {
     }
     fetchCategories();
   }, [user, navigate]);
+
+  useEffect(() => {
+    const categoryId = searchParams.get('category');
+    if (categoryId) {
+      setFormData((prevData) => ({
+        ...prevData,
+        categoryId
+      }));
+    }
+  }, [searchParams]);
 
   const fetchCategories = async () => {
     try {

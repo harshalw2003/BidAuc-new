@@ -5,7 +5,10 @@ const amqp = require('amqplib');
 const RABBITMQ_URL = process.env.RABBITMQ_URL || 'amqp://localhost:5672';
 const EXCHANGE = process.env.RABBITMQ_EXCHANGE || 'marketplace_events';
 const QUEUE = 'user_service_queue';
-const ROUTING_KEYS = ['user.registered'];
+const ROUTING_KEYS = [
+  'user.registered',
+  'user.updated'      // ADD THIS
+];
 
 let channel = null;
 
