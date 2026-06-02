@@ -13,56 +13,70 @@ const ROUTING_KEYS = [
 let channel = null;
 
 const connectConsumer = async (onMessage) => {
-  try {
-    const connection = await amqp.connect(RABBITMQ_URL);
-    channel = await connection.createChannel();
-
-    await channel.assertExchange(EXCHANGE, 'topic', { durable: true });
-    await channel.assertQueue(QUEUE, { durable: true });
-
-    for (const key of ROUTING_KEYS) {
-      await channel.bindQueue(QUEUE, EXCHANGE, key);
-      console.log(`✅ User Service: Bound to routing key: ${key}`);
-    }
-
-    channel.prefetch(1);
-
-    console.log(`👂 User Service: Listening on queue: ${QUEUE}`);
-
-    channel.consume(QUEUE, async (message) => {
-      if (!message) return;
-
+  return new Promise((resolve) => {
+    const attemptConnection = async () => {
       try {
-        const routingKey = message.fields.routingKey;
-        const data = JSON.parse(message.content.toString());
+        const connection = await amqp.connect(RABBITMQ_URL);
+        channel = await connection.createChannel();
 
-        console.log(`📩 User Service received [${routingKey}]`);
+        // Declare exchange
+        await channel.assertExchange(EXCHANGE, 'topic', { durable: true });
 
-        await onMessage(routingKey, data);
+        // Declare queue
+        await channel.assertQueue(QUEUE, { durable: true });
 
-        channel.ack(message);
-        console.log(`✅ Message acknowledged [${routingKey}]`);
+        // Bind routing keys
+        for (const key of ROUTING_KEYS) {
+          await channel.bindQueue(QUEUE, EXCHANGE, key);
+          console.log(`✅ User Service: Bound to routing key: ${key}`);
+        }
+
+        // Process one message at a time
+        channel.prefetch(1);
+
+        console.log(`👂 User Service: Listening on queue: ${QUEUE}`);
+
+        // Start consuming
+        channel.consume(QUEUE, async (message) => {
+          if (!message) return;
+
+          try {
+            const routingKey = message.fields.routingKey;
+            const data = JSON.parse(message.content.toString());
+
+            console.log(`📩 User Service received [${routingKey}]`);
+
+            await onMessage(routingKey, data);
+
+            channel.ack(message);
+            console.log(`✅ User Service: Message acknowledged`);
+          } catch (error) {
+            console.error('❌ User Service: Message processing failed:', error.message);
+            channel.nack(message, false, false);
+          }
+        }, { noAck: false });
+
+        connection.on('error', (error) => {
+          console.error('❌ User Service RabbitMQ error:', error.message);
+        });
+
+        connection.on('close', () => {
+          console.warn('⚠️  User Service RabbitMQ closed. Reconnecting in 5s...');
+          setTimeout(attemptConnection, 5000);
+        });
+
+        console.log('✅ User Service: RabbitMQ consumer connected');
+        resolve();
+
       } catch (error) {
-        console.error('❌ Message processing failed:', error.message);
-        channel.nack(message, false, false);
+        console.error('❌ User Service RabbitMQ connection failed:', error.message);
+        console.log('⏳ Retrying in 5 seconds...');
+        setTimeout(attemptConnection, 5000);
       }
-    }, { noAck: false });
+    };
 
-    connection.on('error', (error) => {
-      console.error('❌ User Service RabbitMQ error:', error.message);
-    });
-
-    connection.on('close', () => {
-      console.warn('⚠️  User Service RabbitMQ closed. Reconnecting in 5s...');
-      setTimeout(() => connectConsumer(onMessage), 5000);
-    });
-
-    console.log('✅ User Service: RabbitMQ consumer connected');
-
-  } catch (error) {
-    console.error('❌ User Service RabbitMQ connection failed:', error.message);
-    setTimeout(() => connectConsumer(onMessage), 5000);
-  }
+    attemptConnection();
+  });
 };
 
 module.exports = { connectConsumer };
