@@ -29,11 +29,9 @@ const start = async () => {
   // Connect to RabbitMQ
   await connectRabbitMQ();
 
-  // Small delay to ensure channel is ready
-  setTimeout(async () => {
-    await startConsumer();
-    console.log('✅ Notification Service ready');
-  }, 1000);
+  // Start consumer after connection is established
+  await startConsumer();
+  console.log('✅ Notification Service ready');
 };
 
 start();
