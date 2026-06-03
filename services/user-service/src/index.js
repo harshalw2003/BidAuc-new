@@ -8,8 +8,8 @@ const cookieParser = require('cookie-parser');
 const config = require('./config');
 const connectDatabase = require('./config/database');
 const { connectConsumer } = require('./config/rabbitmq');
-const { handleUserRegistered } = require('./handlers/userHandler');
 const userRoutes = require('./routes/users');
+const { handleUserRegistered, handleUserUpdated } = require('./handlers/userHandler');
 
 const app = express();
 
@@ -55,11 +55,14 @@ const gracefulShutdown = (signal) => {
 process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
-// ─── Message Router ───────────────────────────────────────
+// ─── Message Handler (RabbitMQ routing) ──────────────────
 const handleMessage = async (routingKey, data) => {
   switch (routingKey) {
     case 'user.registered':
       await handleUserRegistered(data);
+      break;
+    case 'user.updated':
+      await handleUserUpdated(data);
       break;
     default:
       console.warn(`⚠️  Unknown routing key: ${routingKey}`);
@@ -68,13 +71,18 @@ const handleMessage = async (routingKey, data) => {
 
 // ─── Start Server ─────────────────────────────────────────
 const startServer = async () => {
+  // Connect to MongoDB first — service cannot function without it
   await connectDatabase();
-  await connectConsumer(handleMessage);
 
+  // Start HTTP server before RabbitMQ
+  // Health checks must pass independently of message queue
   app.listen(config.port, () => {
     console.log(`✅ User Service running on port ${config.port}`);
     console.log(`🌍 Environment: ${config.nodeEnv}`);
   });
+
+  // Connect RabbitMQ consumer — retry logic is inside connectConsumer
+  connectConsumer(handleMessage);
 };
 
 startServer();

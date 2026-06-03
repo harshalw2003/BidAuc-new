@@ -8,27 +8,36 @@ const EXCHANGE = process.env.RABBITMQ_EXCHANGE || 'marketplace_events';
 let channel = null;
 
 const connectPublisher = async () => {
-  try {
-    const connection = await amqp.connect(RABBITMQ_URL);
-    channel = await connection.createChannel();
+  return new Promise((resolve) => {
+    const attemptConnection = async () => {
+      try {
+        const connection = await amqp.connect(RABBITMQ_URL);
+        channel = await connection.createChannel();
 
-    await channel.assertExchange(EXCHANGE, 'topic', { durable: true });
+        await channel.assertExchange(EXCHANGE, 'topic', { durable: true });
 
-    console.log('✅ Auth Service: RabbitMQ publisher connected');
+        console.log('✅ Auth Service: RabbitMQ publisher connected');
 
-    connection.on('error', (error) => {
-      console.error('❌ Auth Service RabbitMQ error:', error.message);
-    });
+        connection.on('error', (error) => {
+          console.error('❌ Auth Service RabbitMQ error:', error.message);
+        });
 
-    connection.on('close', () => {
-      console.warn('⚠️  Auth Service RabbitMQ closed. Reconnecting in 5s...');
-      setTimeout(connectPublisher, 5000);
-    });
+        connection.on('close', () => {
+          console.warn('⚠️  Auth Service RabbitMQ closed. Reconnecting in 5s...');
+          setTimeout(attemptConnection, 5000);
+        });
 
-  } catch (error) {
-    console.error('❌ Auth Service RabbitMQ connection failed:', error.message);
-    setTimeout(connectPublisher, 5000);
-  }
+        resolve();
+
+      } catch (error) {
+        console.error('❌ Auth Service RabbitMQ connection failed:', error.message);
+        console.log('⏳ Retrying in 5 seconds...');
+        setTimeout(attemptConnection, 5000);
+      }
+    };
+
+    attemptConnection();
+  });
 };
 
 const publishEvent = (routingKey, data) => {
