@@ -22,12 +22,12 @@ const generateTokens = (userId, role) => {
   const accessToken = jwt.sign(
     { userId, role },
     config.jwt.secret,
-    { expiresIn: config.jwt.accessExpiry }
+    { expiresIn: '7d' }
   );
   const refreshToken = jwt.sign(
     { userId, role },
     config.jwt.secret,
-    { expiresIn: config.jwt.refreshExpiry }
+    { expiresIn: '7d' }
   );
   return { accessToken, refreshToken };
 };
@@ -37,7 +37,7 @@ const setTokenCookies = (res, accessToken, refreshToken) => {
     httpOnly: true,
     secure: config.nodeEnv === 'production',
     sameSite: 'lax',
-    maxAge: 15 * 60 * 1000
+   maxAge: 7 * 24 * 60 * 60 * 1000
   });
   res.cookie('refresh_token', refreshToken, {
     httpOnly: true,
