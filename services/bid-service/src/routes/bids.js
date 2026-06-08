@@ -129,23 +129,36 @@ router.get('/my', authMiddleware, async (req, res) => {
 // ─── Accept a Bid — seeker only ───────────────────────────
 router.patch('/:id/accept', authMiddleware, async (req, res) => {
   try {
-    // ... existing code ...
+    if (req.user.role !== 'seeker') {
+      return res.status(403).json({ message: 'Only seekers can accept bids' });
+    }
+
+    console.log('Accepting bid:', req.params.id);
+
+    const bid = await Bid.findById(req.params.id);
+    if (!bid) {
+      return res.status(404).json({ message: 'Bid not found' });
+    }
+
+    console.log('Bid found:', bid._id, 'jobId:', bid.jobId);
 
     const { data: job, error: jobError } = await jobServiceClient.getJob(bid.jobId);
+
+    console.log('Job fetched:', job?._id, 'error:', jobError);
 
     if (jobError) {
       return res.status(503).json({ message: jobError });
     }
 
-    // ─── FIXED: Same populated object handling ──────────────
     const seekerId = job.seekerId?._id
       ? job.seekerId._id.toString()
       : job.seekerId.toString();
 
+    console.log('seekerId:', seekerId, 'req.user._id:', req.user._id);
+
     if (seekerId !== req.user._id.toString()) {
       return res.status(403).json({ message: 'Unauthorized' });
     }
-
 
     if (job.status !== 'open') {
       return res.status(400).json({ message: 'Job is no longer accepting bids' });
@@ -153,26 +166,22 @@ router.patch('/:id/accept', authMiddleware, async (req, res) => {
 
     bid.status = 'accepted';
     await bid.save();
+    console.log('Bid saved as accepted');
 
     await Bid.updateMany(
       { jobId: bid.jobId, _id: { $ne: bid._id } },
       { status: 'rejected' }
     );
+    console.log('Other bids rejected');
 
     const { error: updateError } = await jobServiceClient.updateJobStatus(
       bid.jobId,
       'active',
       bid._id
     );
+    console.log('Job status update error:', updateError);
 
-    if (updateError) {
-      console.error(
-        `CRITICAL: Bid ${bid._id} accepted but job status update failed:`,
-        updateError
-      );
-    }
-
-    // Publish event to RabbitMQ
+    console.log('Publishing bid.accepted event...');
     publishEvent('bid.accepted', {
       bidId: bid._id,
       jobId: bid.jobId,
@@ -181,14 +190,18 @@ router.patch('/:id/accept', authMiddleware, async (req, res) => {
       amount: bid.amount,
       jobTitle: job.title
     });
+    console.log('Event published');
 
+    console.log('Attaching provider details...');
     const [enrichedBid] = await attachProviderDetails([bid]);
+    console.log('Provider details attached');
 
     res.json({
       bid: enrichedBid,
       message: 'Bid accepted. Proceed to payment.'
     });
   } catch (error) {
+    console.error('Accept bid ERROR:', error);
     res.status(500).json({ message: 'Error accepting bid', error: error.message });
   }
 });
