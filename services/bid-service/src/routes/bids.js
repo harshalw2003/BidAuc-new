@@ -85,10 +85,15 @@ router.get('/job/:jobId', authMiddleware, async (req, res) => {
       return res.status(503).json({ message: jobError });
     }
 
-    if (job.seekerId._id
-      ? job.seekerId._id.toString() !== req.user._id.toString()
-      : job.seekerId.toString() !== req.user._id.toString()
-    ) {
+    // ─── FIXED: Handle both populated and unpopulated seekerId ──
+    // job.seekerId can be either:
+    // { _id: "...", name: "..." }  → populated object (after our fix)
+    // "6a1ad2dc..."                → plain ObjectId string (before fix)
+    const seekerId = job.seekerId?._id
+      ? job.seekerId._id.toString()
+      : job.seekerId.toString();
+
+    if (seekerId !== req.user._id.toString()) {
       return res.status(403).json({ message: 'Unauthorized' });
     }
 
@@ -124,14 +129,7 @@ router.get('/my', authMiddleware, async (req, res) => {
 // ─── Accept a Bid — seeker only ───────────────────────────
 router.patch('/:id/accept', authMiddleware, async (req, res) => {
   try {
-    if (req.user.role !== 'seeker') {
-      return res.status(403).json({ message: 'Only seekers can accept bids' });
-    }
-
-    const bid = await Bid.findById(req.params.id);
-    if (!bid) {
-      return res.status(404).json({ message: 'Bid not found' });
-    }
+    // ... existing code ...
 
     const { data: job, error: jobError } = await jobServiceClient.getJob(bid.jobId);
 
@@ -139,13 +137,15 @@ router.patch('/:id/accept', authMiddleware, async (req, res) => {
       return res.status(503).json({ message: jobError });
     }
 
-    const seekerId = job.seekerId._id
+    // ─── FIXED: Same populated object handling ──────────────
+    const seekerId = job.seekerId?._id
       ? job.seekerId._id.toString()
       : job.seekerId.toString();
 
     if (seekerId !== req.user._id.toString()) {
       return res.status(403).json({ message: 'Unauthorized' });
     }
+
 
     if (job.status !== 'open') {
       return res.status(400).json({ message: 'Job is no longer accepting bids' });
