@@ -49,11 +49,13 @@ const JobDetail = () => {
       console.log('Fetched job details:', jobResponse.data);
 
       if (user) {
-        if (user.role === 'seeker' && jobResponse.data.seekerId === user._id) {
-          const bidsResponse = await api.get(`/api/bids/job/${id}`);
-          setBids(bidsResponse.data);
-          console.log('Fetched bids for job:', bidsResponse.data);
-        }
+       if (user.role === 'seeker') {
+  const jobSeekerId = jobResponse.data.seekerId?._id || jobResponse.data.seekerId;
+  if (jobSeekerId.toString() === user._id.toString()) {
+    const bidsResponse = await api.get(`/api/bids/job/${id}`);
+    setBids(bidsResponse.data);
+  }
+}
 
         if (user.role === 'provider') {
           const myBidsResponse = await api.get('/api/bids/my');
@@ -280,7 +282,11 @@ const JobDetail = () => {
     );
   }
 
-  const isOwner = user && user._id === job.seekerId._id;
+  const isOwner = user && (
+  job.seekerId?._id
+    ? job.seekerId._id.toString() === user._id.toString()
+    : job.seekerId.toString() === user._id.toString()
+);
   const canBid = user && user.role === 'provider' && job.status === 'open' && !userBid;
   const canMarkComplete = user &&
     user.role === 'provider' &&
