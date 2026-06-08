@@ -52,13 +52,13 @@ const JobDetail = () => {
        if (user.role === 'seeker') {
   const jobSeekerId = jobResponse.data.seekerId?._id || jobResponse.data.seekerId;
   if (jobSeekerId.toString() === user._id.toString()) {
-    const bidsResponse = await api.get(`/api/bids/job/${id}`);
+    const bidsResponse = await api.get(`/api/bids/job/${id}/`);
     setBids(bidsResponse.data);
   }
 }
 
         if (user.role === 'provider') {
-          const myBidsResponse = await api.get('/api/bids/my');
+          const myBidsResponse = await api.get('/api/bids/my/');
           const existingBid = myBidsResponse.data.find(
             b => b.jobId === id || b.jobId?._id === id
           );
@@ -139,7 +139,7 @@ const JobDetail = () => {
       }
 
       // Create order via payment-service
-      const orderResponse = await api.post('/api/payments/create-order', { bidId });
+      const orderResponse = await api.post('/api/payments/create-order/', { bidId });
       const { orderId, amount, currency, keyId } = orderResponse.data;
 
       const options = {
@@ -216,7 +216,7 @@ const JobDetail = () => {
     }
 
     try {
-      const response = await api.patch(`/api/bids/${bidId}/accept`);
+      const response = await api.patch(`/api/bids/${bidId}/accept/`);
       toast.success(response.data.message);
       await fetchJobDetails();
       // Initiate payment after bid accepted
@@ -232,7 +232,7 @@ const JobDetail = () => {
     }
 
     try {
-      await api.patch(`/api/jobs/${id}/complete`);
+      await api.patch(`/api/jobs/${id}/complete/`);
       toast.success('Job marked as complete!');
       fetchJobDetails();
     } catch (error) {
