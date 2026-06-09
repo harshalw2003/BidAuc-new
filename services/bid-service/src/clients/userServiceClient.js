@@ -2,11 +2,17 @@
 
 const axios = require('axios');
 
+const USER_SERVICE_URL = process.env.USER_SERVICE_URL || 'http://localhost:3002';
+
+// Log the URL at startup so misconfiguration is immediately visible
+console.log(`🔗 Job Service: User Service URL = ${USER_SERVICE_URL}`);
+
 const userServiceAxios = axios.create({
-  baseURL: process.env.USER_SERVICE_URL || 'http://localhost:3002',
+  baseURL: USER_SERVICE_URL,
   timeout: 5000,
   headers: { 'Content-Type': 'application/json' }
 });
+
 
 const userServiceClient = {
 
