@@ -14,9 +14,11 @@ const attachProviderDetails = async (bids) => {
 
   const providerIds = [...new Set(bids.map(b => b.providerId.toString()))];
   const { data: usersMap } = await userServiceClient.getUsers(providerIds);
-
+  console.log('Fetched Provider details for bid details:', usersMap);
+  
   return bids.map(bid => {
     const bidObj = bid.toObject();
+    console.log("Bids with provider details:", bidObj);
     bidObj.providerId = usersMap[bid.providerId.toString()] || {
       _id: bid.providerId,
       name: 'Unknown Provider',
