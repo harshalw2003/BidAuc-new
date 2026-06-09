@@ -17,6 +17,7 @@ const razorpay = new Razorpay({
 });
 
 // ─── Create Razorpay Order ────────────────────────────────
+// ─── Create Razorpay Order ────────────────────────────────
 router.post('/create-order', authMiddleware, async (req, res) => {
   try {
     if (req.user.role !== 'seeker') {
@@ -29,14 +30,13 @@ router.post('/create-order', authMiddleware, async (req, res) => {
       return res.status(400).json({ message: 'Bid ID is required' });
     }
 
-    // Idempotency check — prevent duplicate orders for same bid
+    // Idempotency check
     const existingPayment = await Payment.findOne({
       bidId,
       status: { $in: ['pending', 'paid'] }
     });
 
     if (existingPayment) {
-      // Return existing order instead of creating new one
       return res.json({
         orderId: existingPayment.razorpayOrderId,
         amount: existingPayment.amount * 100,
@@ -45,35 +45,42 @@ router.post('/create-order', authMiddleware, async (req, res) => {
       });
     }
 
-    // Fetch bid details from bid-service
+    // Fetch bid details
     const { data: bid, error: bidError } = await bidServiceClient.getBid(bidId);
 
     if (bidError) {
       return res.status(503).json({ message: bidError });
     }
 
-    // Verify bid is accepted
+    console.log('Bid fetched:', bid);
+
     if (bid.status !== 'accepted') {
       return res.status(400).json({
         message: 'Bid must be accepted before payment'
       });
     }
 
-    // Fetch job details from job-service
+    // Fetch job details
     const { data: job, error: jobError } = await jobServiceClient.getJob(bid.jobId);
 
     if (jobError) {
       return res.status(503).json({ message: jobError });
     }
 
-    // Verify job belongs to this seeker
-    if (job.seekerId.toString() !== req.user._id.toString()) {
+    console.log('Job fetched, seekerId:', job.seekerId);
+
+    // ─── FIXED: Handle populated seekerId object ──────────
+    const jobSeekerId = job.seekerId?._id
+      ? job.seekerId._id.toString()
+      : job.seekerId.toString();
+
+    if (jobSeekerId !== req.user._id.toString()) {
       return res.status(403).json({ message: 'Unauthorized' });
     }
 
     // Create Razorpay order
     const order = await razorpay.orders.create({
-      amount: bid.amount * 100, // paise
+      amount: bid.amount * 100,
       currency: 'INR',
       receipt: `bid_${bidId}_${Date.now()}`
     });
@@ -98,6 +105,7 @@ router.post('/create-order', authMiddleware, async (req, res) => {
       keyId: config.razorpay.keyId
     });
   } catch (error) {
+    console.error('Create order ERROR:', error);
     res.status(500).json({
       message: 'Error creating order',
       error: error.message
