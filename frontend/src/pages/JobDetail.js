@@ -44,7 +44,7 @@ const JobDetail = () => {
 
   const fetchJobDetails = useCallback(async () => {
     try {
-      const jobResponse = await api.get(`/api/jobs/${id}`);
+      const jobResponse = await api.get(`/api/jobs/${id}/`);
       setJob(jobResponse.data);
       console.log('Fetched job details:', jobResponse.data);
 
@@ -153,7 +153,7 @@ const JobDetail = () => {
         // ─── Success Handler ────────────────────────────
         handler: async (response) => {
           try {
-            await api.post('/api/payments/verify', {
+            await api.post('/api/payments/verify/', {
               razorpayOrderId: response.razorpay_order_id,
               razorpayPaymentId: response.razorpay_payment_id,
               razorpaySignature: response.razorpay_signature
