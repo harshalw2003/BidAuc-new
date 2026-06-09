@@ -58,7 +58,7 @@ process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 // Update startServer function
 const startServer = async () => {
   await connectDatabase();
-  await connectPublisher();
+  await connectPublisher();  // waits until connected
 
   app.listen(config.port, () => {
     console.log(`✅ Bid Service running on port ${config.port}`);

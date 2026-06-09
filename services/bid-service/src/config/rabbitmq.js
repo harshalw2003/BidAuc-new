@@ -51,7 +51,7 @@ const publishEvent = (routingKey, data) => {
       EXCHANGE,
       routingKey,
       Buffer.from(JSON.stringify(data)),
-      { persistent: true }  // message survives RabbitMQ restart
+      { persistent: true }
     );
 
     console.log(`📤 Published event [${routingKey}]`);
