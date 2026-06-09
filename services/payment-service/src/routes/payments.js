@@ -82,7 +82,7 @@ router.post('/create-order', authMiddleware, async (req, res) => {
     const order = await razorpay.orders.create({
       amount: bid.amount * 100,
       currency: 'INR',
-      receipt: `bid_${bidId}_${Date.now()}`
+      receipt: `bid_${bidId}`
     });
 
     // Save payment record
