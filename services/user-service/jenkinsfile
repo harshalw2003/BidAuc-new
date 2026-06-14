@@ -42,7 +42,7 @@ pipeline {
 
                     if (!relevant) {
                         currentBuild.result = 'NOT_BUILT'
-                        echo "No changes in auth-service. Skipping pipeline."
+                        echo "No changes in user-service. Skipping pipeline."
                         error("SKIP: No relevant changes detected.")
                     }
                 }
@@ -79,7 +79,7 @@ pipeline {
                 dir("services/${SERVICE_NAME}") {
                     sh '''
                         echo "[PLACEHOLDER] Unit tests will run here."
-                        echo "TODO: Add Jest/Mocha tests for auth-service."
+                        echo "TODO: Add Jest/Mocha tests for user-service."
                         echo "Expected: npm test -- --coverage"
                         exit 0
                     '''
