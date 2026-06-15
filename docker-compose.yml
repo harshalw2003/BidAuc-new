@@ -207,19 +207,19 @@ services:
     restart: unless-stopped
     ports:
       - "80:80"
-  depends_on:                              # keep existing depends_on
-    auth-service:
+    depends_on:                              # keep existing depends_on
+      auth-service:
+          condition: service_healthy
+      user-service:
         condition: service_healthy
-    user-service:
-      condition: service_healthy
-    job-service:
-      condition: service_healthy
-    bid-service:
-      condition: service_healthy
-    payment-service:
-      condition: service_healthy
-  networks:
-    - marketplace
+      job-service:
+        condition: service_healthy
+      bid-service:
+        condition: service_healthy
+      payment-service:
+        condition: service_healthy
+    networks:
+      - marketplace
 
 # ─── Networks ─────────────────────────────────────────────
 networks:
