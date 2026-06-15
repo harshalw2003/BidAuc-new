@@ -199,14 +199,14 @@ services:
   # ── API Gateway ──────────────────────────────────────────
 
   api-gateway:
-  build:                                    # ← Change from image: to build:
-    context: ./api-gateway
-    dockerfile: Dockerfile
-    target: production                      # optional if you add multi-stage later
-  container_name: api-gateway
-  restart: unless-stopped
-  ports:
-    - "80:80"
+    build:                                    # ← Change from image: to build:
+      context: ./api-gateway
+      dockerfile: Dockerfile
+      target: production                      # optional if you add multi-stage later
+    container_name: api-gateway
+    restart: unless-stopped
+    ports:
+      - "80:80"
   depends_on:                              # keep existing depends_on
     auth-service:
         condition: service_healthy
