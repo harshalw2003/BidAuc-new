@@ -202,7 +202,7 @@ services:
     build:                                    # ← Change from image: to build:
       context: ./api-gateway
       dockerfile: Dockerfile
-      target: production                      # optional if you add multi-stage later
+      # target: production                      # optional if you add multi-stage later
     container_name: api-gateway
     restart: unless-stopped
     ports:
