@@ -84,28 +84,31 @@ pipeline {
         stage('Smoke Test Container') {
             steps {
                 script {
-                    echo "Starting container to verify nginx boots cleanly..."
-                    sh """
-                        CONTAINER_ID=\$(docker run -d ${ECR_REPO}:${IMAGE_TAG})
-                        sleep 3
+            echo "Starting container to verify nginx boots cleanly..."
+            def containerId = sh(
+                script: "docker run -d ${ECR_REPO}:${IMAGE_TAG}",
+                returnStdout: true
+            ).trim()
 
-                        # nginx fails fast on invalid config — if the container
-                        # is not running after 3s, the config is broken
-                        STATUS=\$(docker inspect -f '{{.State.Running}}' \$CONTAINER_ID)
+            sleep(3)
 
-                        if [ "\$STATUS" != "true" ]; then
-                            echo "Container exited unexpectedly. Dumping logs:"
-                            docker logs \$CONTAINER_ID
-                            docker rm -f \$CONTAINER_ID || true
-                            error("nginx failed to start — invalid config in image.")
-                        fi
+            def status = sh(
+                script: "docker inspect -f '{{.State.Running}}' ${containerId}",
+                returnStdout: true
+            ).trim()
 
-                        echo "Container running cleanly. nginx started successfully."
-                        docker rm -f \$CONTAINER_ID
-                    """
-                }
+            if (status != "true") {
+                echo "Container exited unexpectedly. Dumping logs:"
+                sh "docker logs ${containerId} || true"
+                sh "docker rm -f ${containerId} || true"
+                error("nginx failed to start — invalid config in image.")
             }
+
+            echo "Container running cleanly. nginx started successfully."
+            sh "docker rm -f ${containerId}"
         }
+    }
+}
 
         stage('Push to ECR') {
             steps {
