@@ -8,7 +8,7 @@ pipeline {
         SERVICE_NAME       = 'auth-service'
         ECR_REPO           = "${ECR_REGISTRY}/bidauc/${SERVICE_NAME}"
         IMAGE_TAG          = "main-${GIT_COMMIT[0..6]}"
-        DOCKERFILE_PATH    = "./Dockerfile"
+        DOCKERFILE_PATH    = "./service/auth-service/Dockerfile"
         AWS_CREDENTIALS_ID = 'aws-bidauc-jenkins'
     }
 
