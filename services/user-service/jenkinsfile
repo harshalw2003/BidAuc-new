@@ -8,7 +8,7 @@ pipeline {
         SERVICE_NAME       = 'user-service'
         ECR_REPO           = "${ECR_REGISTRY}/bidauc/${SERVICE_NAME}"
         IMAGE_TAG          = "main-${GIT_COMMIT[0..6]}"
-        DOCKERFILE_PATH    = "./services/${SERVICE_NAME}/Dockerfile"
+        DOCKERFILE_PATH    = "./services/user-service/Dockerfile"
         AWS_CREDENTIALS_ID = 'aws-bidauc-jenkins'
     }
 
@@ -37,7 +37,7 @@ pipeline {
                     def relevant = changedFiles.split('\n').any { file ->
                         file.startsWith("services/user-service/") ||
                         file.startsWith("docker/user-service") ||
-                        file == 'docker-compose.yml'
+                        file == 'docker-compose.yml' 
                     }
 
                     if (!relevant) {
