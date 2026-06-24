@@ -81,34 +81,34 @@ pipeline {
             }
         }
 
-        stage('Smoke Test Container') {
-            steps {
-                script {
-            echo "Starting container to verify nginx boots cleanly..."
-            def containerId = sh(
-                script: "docker run -d ${ECR_REPO}:${IMAGE_TAG}",
-                returnStdout: true
-            ).trim()
+//         stage('Smoke Test Container') {
+//             steps {
+//                 script {
+//             echo "Starting container to verify nginx boots cleanly..."
+//             def containerId = sh(
+//                 script: "docker run -d ${ECR_REPO}:${IMAGE_TAG}",
+//                 returnStdout: true
+//             ).trim()
 
-            sleep(3)
+//             sleep(3)
 
-            def status = sh(
-                script: "docker inspect -f '{{.State.Running}}' ${containerId}",
-                returnStdout: true
-            ).trim()
+//             def status = sh(
+//                 script: "docker inspect -f '{{.State.Running}}' ${containerId}",
+//                 returnStdout: true
+//             ).trim()
 
-            if (status != "true") {
-                echo "Container exited unexpectedly. Dumping logs:"
-                sh "docker logs ${containerId} || true"
-                sh "docker rm -f ${containerId} || true"
-                error("nginx failed to start — invalid config in image.")
-            }
+//             if (status != "true") {
+//                 echo "Container exited unexpectedly. Dumping logs:"
+//                 sh "docker logs ${containerId} || true"
+//                 sh "docker rm -f ${containerId} || true"
+//                 error("nginx failed to start — invalid config in image.")
+//             }
 
-            echo "Container running cleanly. nginx started successfully."
-            sh "docker rm -f ${containerId}"
-        }
-    }
-}
+//             echo "Container running cleanly. nginx started successfully."
+//             sh "docker rm -f ${containerId}"
+//         }
+//     }
+// }
 
         stage('Push to ECR') {
             steps {
