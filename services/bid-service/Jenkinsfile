@@ -8,7 +8,7 @@ pipeline {
         SERVICE_NAME       = 'bid-service'
         ECR_REPO           = "${ECR_REGISTRY}/bidauc/${SERVICE_NAME}"
         IMAGE_TAG          = "main-${GIT_COMMIT[0..6]}"
-        DOCKERFILE_PATH    = "./services/${SERVICE_NAME}/Dockerfile"
+        DOCKERFILE_PATH    = "./services/bid-service/Dockerfile"
         AWS_CREDENTIALS_ID = 'aws-bidauc-jenkins'
     }
 
@@ -37,7 +37,7 @@ pipeline {
                     def relevant = changedFiles.split('\n').any { file ->
                         file.startsWith("services/bid-service/") ||
                         file.startsWith("docker/bid-service") ||
-                        file == "services/bid-service/Jenkinsfile"
+                        file == "services/bid-service/Jenkinsfile" ||
                         file == 'docker-compose.yml'
                     }
 
@@ -125,15 +125,15 @@ pipeline {
             }
         }
 
-        stage('Cleanup') {
-            steps {
-                sh """
-                    docker rmi ${ECR_REPO}:${IMAGE_TAG} || true
-                    docker rmi ${ECR_REPO}:latest || true
-                    echo "Local images cleaned up."
-                """
-            }
-        }
+        // stage('Cleanup') {
+        //     steps {
+        //         sh """
+        //             docker rmi ${ECR_REPO}:${IMAGE_TAG} || true
+        //             docker rmi ${ECR_REPO}:latest || true
+        //             echo "Local images cleaned up."
+        //         """
+        //     }
+        // }
     }
 
     post {
@@ -155,7 +155,7 @@ pipeline {
             """
         }
         always {
-            cleanWs()
+            // cleanWs()
         }
     }
 }

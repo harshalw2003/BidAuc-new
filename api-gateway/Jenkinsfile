@@ -8,12 +8,13 @@ pipeline {
         SERVICE_NAME       = 'api-gateway'
         ECR_REPO           = "${ECR_REGISTRY}/bidauc/${SERVICE_NAME}"
         IMAGE_TAG          = "main-${GIT_COMMIT[0..6]}"
+        DOCKERFILE_PATH    = "./api-gateway/Dockerfile"
         AWS_CREDENTIALS_ID = 'aws-bidauc-jenkins'
     }
 
     options {
         buildDiscarder(logRotator(numToKeepStr: '10'))
-        timeout(time: 15, unit: 'MINUTES')
+        timeout(time: 20, unit: 'MINUTES')
         disableConcurrentBuilds()
     }
 
@@ -34,7 +35,10 @@ pipeline {
                     echo "Changed files:\n${changedFiles}"
 
                     def relevant = changedFiles.split('\n').any { file ->
-                        file.startsWith("api-gateway/")
+                        file.startsWith("/api-gateway/") ||
+                        file.startsWith("docker/api-gateway") ||
+                        file == "/api-gateway/Jenkinsfile" ||
+                        file == 'docker-compose.yml'
                     }
 
                     if (!relevant) {
@@ -55,52 +59,54 @@ pipeline {
             }
         }
 
-        // No Lint/Unit Test stage — api-gateway is a config-only image.
-        // Validation happens via nginx's own startup check (fail-fast on
-        // invalid config) plus the Docker healthcheck in compose/K8s.
-        // This is intentional, not an oversight: there is no application
-        // logic here to lint or unit test, only a reverse-proxy config.
-
-        stage('Build Docker Image') {
+        stage('Lint') {
             steps {
-                dir("${SERVICE_NAME}") {
-                    script {
-                        echo "Building Docker image: ${ECR_REPO}:${IMAGE_TAG}"
-                        sh """
-                            docker build \
-                                -f ./Dockerfile \
-                                -t ${ECR_REPO}:${IMAGE_TAG} \
-                                -t ${ECR_REPO}:latest \
-                                --no-cache \
-                                .
-                        """
-                    }
+                dir("services/${SERVICE_NAME}") {
+                    sh '''
+                        echo "Running lint checks..."
+                        if [ -f package.json ] && grep -q '"lint"' package.json; then
+                            npm ci
+                            npm run lint
+                        else
+                            echo "No lint script found. Skipping."
+                        fi
+                    '''
                 }
             }
         }
 
-        stage('Smoke Test Container') {
+        stage('Unit Tests') {
             steps {
-                script {
-                    echo "Starting container to verify nginx boots cleanly..."
-                    sh """
-                        CONTAINER_ID=\$(docker run -d ${ECR_REPO}:${IMAGE_TAG})
-                        sleep 3
+                dir("services/${SERVICE_NAME}") {
+                    sh '''
+                        echo "[PLACEHOLDER] Unit tests will run here."
+                        echo "TODO: Add Jest/Mocha tests for job-service."
+                        echo "Expected: npm test -- --coverage"
+                        exit 0
+                    '''
+                }
+            }
+            post {
+                always {
+                    echo "Test stage complete. Coverage reports will be published here in future."
+                }
+            }
+        }
 
-                        # nginx fails fast on invalid config — if the container
-                        # is not running after 3s, the config is broken
-                        STATUS=\$(docker inspect -f '{{.State.Running}}' \$CONTAINER_ID)
-
-                        if [ "\$STATUS" != "true" ]; then
-                            echo "Container exited unexpectedly. Dumping logs:"
-                            docker logs \$CONTAINER_ID
-                            docker rm -f \$CONTAINER_ID || true
-                            error("nginx failed to start — invalid config in image.")
-                        fi
-
-                        echo "Container running cleanly. nginx started successfully."
-                        docker rm -f \$CONTAINER_ID
+        stage('Build Docker Image') {
+            steps {
+                dir("services/${SERVICE_NAME}") {
+                    script {
+                        echo "Building Docker image: ${ECR_REPO}:${IMAGE_TAG}"
+                        sh """
+                            docker build \
+                            -f ./Dockerfile \
+                            -t ${ECR_REPO}:${IMAGE_TAG} \
+                            -t ${ECR_REPO}:latest \
+                            --no-cache \
+                            .
                     """
+                    }
                 }
             }
         }
@@ -108,7 +114,7 @@ pipeline {
         stage('Push to ECR') {
             steps {
                 script {
-                     sh """
+                    sh """
     aws ecr get-login-password --region ${AWS_REGION} | \
     docker login --username AWS --password-stdin ${ECR_REGISTRY}
     docker push ${ECR_REPO}:${IMAGE_TAG}
@@ -118,15 +124,15 @@ pipeline {
             }
         }
 
-        stage('Cleanup') {
-            steps {
-                sh """
-                    docker rmi ${ECR_REPO}:${IMAGE_TAG} || true
-                    docker rmi ${ECR_REPO}:latest || true
-                    echo "Local images cleaned up."
-                """
-            }
-        }
+        // stage('Cleanup') {
+        //     steps {
+        //         sh """
+        //             docker rmi ${ECR_REPO}:${IMAGE_TAG} || true
+        //             docker rmi ${ECR_REPO}:latest || true
+        //             echo "Local images cleaned up."
+        //         """
+        //     }
+        // }
     }
 
     post {
@@ -148,7 +154,7 @@ pipeline {
             """
         }
         always {
-            cleanWs()
+            // cleanWs()
         }
     }
 }

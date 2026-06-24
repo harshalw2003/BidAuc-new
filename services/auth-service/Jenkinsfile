@@ -37,6 +37,7 @@ pipeline {
                     def relevant = changedFiles.split('\n').any { file ->
                         file.startsWith("services/auth-service/") ||
                         file.startsWith("docker/auth-service") ||
+                        file == "services/auth-service/Jenkinsfile" ||
                         file == 'docker-compose.yml'
                     }
 
@@ -93,23 +94,23 @@ pipeline {
         }
 
         stage('Build Docker Image') {
-    steps {
-        dir("services/${SERVICE_NAME}") {
-            script {
-                echo "Building Docker image: ${ECR_REPO}:${IMAGE_TAG}"
-                sh """
-                    docker build \
-                        -f ./Dockerfile \
-                        -t ${ECR_REPO}:${IMAGE_TAG} \
-                        -t ${ECR_REPO}:latest \
-                        --build-arg NODE_ENV=production \
-                        --no-cache \
-                        .
-                """
+            steps {
+                dir("services/${SERVICE_NAME}") {
+                    script {
+                        echo "Building Docker image: ${ECR_REPO}:${IMAGE_TAG}"
+                        sh """
+                            docker build \
+                            -f ./Dockerfile \
+                            -t ${ECR_REPO}:${IMAGE_TAG} \
+                            -t ${ECR_REPO}:latest \
+                            --build-arg NODE_ENV=production \
+                            --no-cache \
+                            .
+                    """
+                    }
+                }
             }
         }
-    }
-}
 
         stage('Push to ECR') {
             steps {
@@ -124,15 +125,15 @@ pipeline {
             }
         }
 
-        stage('Cleanup') {
-            steps {
-                sh """
-                    docker rmi ${ECR_REPO}:${IMAGE_TAG} || true
-                    docker rmi ${ECR_REPO}:latest || true
-                    echo "Local images cleaned up."
-                """
-            }
-        }
+        // stage('Cleanup') {
+        //     steps {
+        //         sh """
+        //             docker rmi ${ECR_REPO}:${IMAGE_TAG} || true
+        //             docker rmi ${ECR_REPO}:latest || true
+        //             echo "Local images cleaned up."
+        //         """
+        //     }
+        // }
     }
 
     post {
@@ -154,7 +155,7 @@ pipeline {
             """
         }
         always {
-            cleanWs()
+            // cleanWs()
         }
     }
 }

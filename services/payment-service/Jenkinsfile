@@ -37,12 +37,13 @@ pipeline {
                     def relevant = changedFiles.split('\n').any { file ->
                         file.startsWith("services/payment-service/") ||
                         file.startsWith("docker/payment-service") ||
+                        file == "services/payment-service/Jenkinsfile" ||
                         file == 'docker-compose.yml'
                     }
 
                     if (!relevant) {
                         currentBuild.result = 'NOT_BUILT'
-                        echo "No changes in notification-service. Skipping pipeline."
+                        echo "No changes in job-service. Skipping pipeline."
                         error("SKIP: No relevant changes detected.")
                     }
                 }
@@ -92,7 +93,7 @@ pipeline {
             }
         }
 
-         stage('Build Docker Image') {
+        stage('Build Docker Image') {
             steps {
                 dir("services/${SERVICE_NAME}") {
                     script {
@@ -124,15 +125,15 @@ pipeline {
             }
         }
 
-        stage('Cleanup') {
-            steps {
-                sh """
-                    docker rmi ${ECR_REPO}:${IMAGE_TAG} || true
-                    docker rmi ${ECR_REPO}:latest || true
-                    echo "Local images cleaned up."
-                """
-            }
-        }
+        // stage('Cleanup') {
+        //     steps {
+        //         sh """
+        //             docker rmi ${ECR_REPO}:${IMAGE_TAG} || true
+        //             docker rmi ${ECR_REPO}:latest || true
+        //             echo "Local images cleaned up."
+        //         """
+        //     }
+        // }
     }
 
     post {
@@ -154,7 +155,7 @@ pipeline {
             """
         }
         always {
-            cleanWs()
+            // cleanWs()
         }
     }
 }

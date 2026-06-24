@@ -37,7 +37,8 @@ pipeline {
                     def relevant = changedFiles.split('\n').any { file ->
                         file.startsWith("services/user-service/") ||
                         file.startsWith("docker/user-service") ||
-                        file == 'docker-compose.yml' 
+                        file == "services/user-service/Jenkinsfile" ||
+                        file == 'docker-compose.yml'
                     }
 
                     if (!relevant) {
@@ -114,7 +115,7 @@ pipeline {
         stage('Push to ECR') {
             steps {
                 script {
-                   sh """
+                    sh """
     aws ecr get-login-password --region ${AWS_REGION} | \
     docker login --username AWS --password-stdin ${ECR_REGISTRY}
     docker push ${ECR_REPO}:${IMAGE_TAG}
@@ -124,15 +125,15 @@ pipeline {
             }
         }
 
-        stage('Cleanup') {
-            steps {
-                sh """
-                    docker rmi ${ECR_REPO}:${IMAGE_TAG} || true
-                    docker rmi ${ECR_REPO}:latest || true
-                    echo "Local images cleaned up."
-                """
-            }
-        }
+        // stage('Cleanup') {
+        //     steps {
+        //         sh """
+        //             docker rmi ${ECR_REPO}:${IMAGE_TAG} || true
+        //             docker rmi ${ECR_REPO}:latest || true
+        //             echo "Local images cleaned up."
+        //         """
+        //     }
+        // }
     }
 
     post {
@@ -154,7 +155,7 @@ pipeline {
             """
         }
         always {
-            cleanWs()
+            // cleanWs()
         }
     }
 }

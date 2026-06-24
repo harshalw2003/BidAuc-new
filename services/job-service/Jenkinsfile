@@ -37,6 +37,7 @@ pipeline {
                     def relevant = changedFiles.split('\n').any { file ->
                         file.startsWith("services/job-service/") ||
                         file.startsWith("docker/job-service") ||
+                        file == "services/job-service/Jenkinsfile" ||
                         file == 'docker-compose.yml'
                     }
 
@@ -92,7 +93,7 @@ pipeline {
             }
         }
 
-       stage('Build Docker Image') {
+        stage('Build Docker Image') {
             steps {
                 dir("services/${SERVICE_NAME}") {
                     script {
@@ -110,6 +111,7 @@ pipeline {
                 }
             }
         }
+
         stage('Push to ECR') {
             steps {
                 script {
@@ -123,15 +125,15 @@ pipeline {
             }
         }
 
-        stage('Cleanup') {
-            steps {
-                sh """
-                    docker rmi ${ECR_REPO}:${IMAGE_TAG} || true
-                    docker rmi ${ECR_REPO}:latest || true
-                    echo "Local images cleaned up."
-                """
-            }
-        }
+        // stage('Cleanup') {
+        //     steps {
+        //         sh """
+        //             docker rmi ${ECR_REPO}:${IMAGE_TAG} || true
+        //             docker rmi ${ECR_REPO}:latest || true
+        //             echo "Local images cleaned up."
+        //         """
+        //     }
+        // }
     }
 
     post {
@@ -153,7 +155,7 @@ pipeline {
             """
         }
         always {
-            cleanWs()
+            // cleanWs()
         }
     }
 }
