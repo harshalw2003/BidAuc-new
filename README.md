@@ -31,4 +31,4 @@ docker-compose up
 - Container: Docker
 - Orchestration: Kubernetes (EKS)
 - IaC: Terraform
-- CI/CD: GitHub Actions
+- CI/CD: Jenkins

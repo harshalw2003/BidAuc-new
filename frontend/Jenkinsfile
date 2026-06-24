@@ -1,0 +1,192 @@
+pipeline {
+    agent any
+
+    environment {
+        SERVICE_NAME          = 'frontend'
+        S3_BUCKET             = '<YOUR_S3_BUCKET_NAME>'      // TODO: Replace before first run
+        CLOUDFRONT_DIST_ID    = '<YOUR_CLOUDFRONT_DIST_ID>'  // TODO: Replace after CloudFront provisioned
+        AWS_REGION            = 'ap-south-1'
+        AWS_CREDENTIALS_ID    = 'aws-bidauc-jenkins'
+        BUILD_DIR             = 'frontend/build'
+    }
+
+    options {
+        buildDiscarder(logRotator(numToKeepStr: '10'))
+        timeout(time: 15, unit: 'MINUTES')
+        disableConcurrentBuilds()
+    }
+
+    triggers {
+        githubPush()
+    }
+
+    stages {
+
+        stage('Guard: Changed Files') {
+            steps {
+                script {
+                    def changedFiles = sh(
+                        script: "git diff --name-only HEAD~1 HEAD || echo 'initial'",
+                        returnStdout: true
+                    ).trim()
+
+                    echo "Changed files:\n${changedFiles}"
+
+                    def relevant = changedFiles.split('\n').any { file ->
+                        file.startsWith("frontend/")
+                    }
+
+                    if (!relevant) {
+                        currentBuild.result = 'NOT_BUILT'
+                        echo "No changes in frontend. Skipping pipeline."
+                        error("SKIP: No relevant changes detected.")
+                    }
+                }
+            }
+        }
+
+        stage('Checkout') {
+            steps {
+                checkout scm
+                echo "Branch: ${env.GIT_BRANCH}"
+                echo "Commit: ${env.GIT_COMMIT}"
+            }
+        }
+
+        stage('Install Dependencies') {
+            steps {
+                dir('frontend') {
+                    sh '''
+                        echo "Installing dependencies with clean install..."
+                        npm ci
+                    '''
+                }
+            }
+        }
+
+        stage('Lint') {
+            steps {
+                dir('frontend') {
+                    sh '''
+                        echo "Running lint checks..."
+                        if grep -q '"lint"' package.json; then
+                            npm run lint
+                        else
+                            echo "No lint script found. Skipping."
+                        fi
+                    '''
+                }
+            }
+        }
+
+        stage('Unit Tests') {
+            steps {
+                dir('frontend') {
+                    sh '''
+                        echo "[PLACEHOLDER] Unit tests will run here."
+                        echo "TODO: Add React Testing Library / Jest tests."
+                        echo "Expected: npm test -- --watchAll=false --coverage"
+                        exit 0
+                    '''
+                }
+            }
+            post {
+                always {
+                    echo "Test stage complete. Coverage reports will be published here in future."
+                }
+            }
+        }
+
+        stage('Build') {
+            steps {
+                dir('frontend') {
+                    sh '''
+                        echo "Building React production bundle..."
+                        GENERATE_SOURCEMAP=false npm run build
+                        echo "Build complete. Contents of /build:"
+                        ls -lh build/
+                    '''
+                }
+            }
+        }
+
+        stage('Upload to S3') {
+            steps {
+                script {
+                    withCredentials([[
+                        $class: 'AmazonWebServicesCredentialsBinding',
+                        credentialsId: "${AWS_CREDENTIALS_ID}",
+                        accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                        secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+                    ]]) {
+                        sh """
+                            echo "Syncing build output to S3..."
+                            aws s3 sync ${BUILD_DIR} s3://${S3_BUCKET}/ \
+                                --region ${AWS_REGION} \
+                                --delete \
+                                --cache-control "public, max-age=31536000, immutable"
+
+                            # index.html must NOT be cached — browsers must always
+                            # fetch the latest entry point to get updated asset hashes
+                            aws s3 cp ${BUILD_DIR}/index.html s3://${S3_BUCKET}/index.html \
+                                --region ${AWS_REGION} \
+                                --cache-control "no-cache, no-store, must-revalidate" \
+                                --content-type "text/html"
+
+                            echo "S3 sync complete."
+                        """
+                    }
+                }
+            }
+        }
+
+        stage('Invalidate CloudFront Cache') {
+            when {
+                expression {
+                    return env.CLOUDFRONT_DIST_ID != '<YOUR_CLOUDFRONT_DIST_ID>'
+                }
+            }
+            steps {
+                script {
+                    withCredentials([[
+                        $class: 'AmazonWebServicesCredentialsBinding',
+                        credentialsId: "${AWS_CREDENTIALS_ID}",
+                        accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                        secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+                    ]]) {
+                        sh """
+                            echo "Invalidating CloudFront cache..."
+                            aws cloudfront create-invalidation \
+                                --distribution-id ${CLOUDFRONT_DIST_ID} \
+                                --paths "/*"
+                            echo "Cache invalidation triggered."
+                        """
+                    }
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo """
+            ✅ Frontend Pipeline SUCCESS
+            Branch:  ${GIT_BRANCH}
+            Commit:  ${GIT_COMMIT}
+            Bucket:  s3://${S3_BUCKET}
+            Status:  Live on S3. CloudFront invalidation: auto-skipped until distribution is provisioned.
+            """
+        }
+        failure {
+            echo """
+            ❌ Frontend Pipeline FAILED
+            Branch:  ${GIT_BRANCH}
+            Commit:  ${GIT_COMMIT}
+            Check logs above for root cause.
+            """
+        }
+        always {
+            cleanWs()
+        }
+    }
+}

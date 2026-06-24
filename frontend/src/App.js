@@ -13,6 +13,7 @@ import JobDetail from './pages/JobDetail';
 import ProviderProfile from './pages/ProviderProfile';
 import EditProfile from './pages/EditProfile';
 import MyProfile from './pages/MyProfile';
+import Footer from './components/Footer';
 
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
@@ -36,20 +37,23 @@ function App() {
   return (
     <AuthProvider>
       <Router>
-        <div className="App">
-          <Routes>
-            <Route path="/login" element={<PhoneLogin />} />
-            <Route path="/role-selection" element={<RoleSelection />} />
-            <Route path="/" element={<Home />} />
-            <Route path="/categories" element={<Categories />} />
-            <Route path="/post-job" element={<ProtectedRoute><PostJob /></ProtectedRoute>} />
-            <Route path="/jobs" element={<JobList />} />
-            <Route path="/jobs/:id" element={<JobDetail />} />
-            <Route path="/provider/:id" element={<ProviderProfile />} />
-            <Route path="/profile/edit" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
-            <Route path="/profile" element={<ProtectedRoute><MyProfile /></ProtectedRoute>} />
-          </Routes>
-                  </div>
+        <div className="App min-h-screen flex flex-col">
+          <main className="flex-grow">
+            <Routes>
+              <Route path="/login" element={<PhoneLogin />} />
+              <Route path="/role-selection" element={<RoleSelection />} />
+              <Route path="/" element={<Home />} />
+              <Route path="/categories" element={<Categories />} />
+              <Route path="/post-job" element={<ProtectedRoute><PostJob /></ProtectedRoute>} />
+              <Route path="/jobs" element={<JobList />} />
+              <Route path="/jobs/:id" element={<JobDetail />} />
+              <Route path="/provider/:id" element={<ProviderProfile />} />
+              <Route path="/profile/edit" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
+              <Route path="/profile" element={<ProtectedRoute><MyProfile /></ProtectedRoute>} />
+            </Routes>
+          </main>
+          <Footer />
+        </div>
       </Router>
     </AuthProvider>
   );

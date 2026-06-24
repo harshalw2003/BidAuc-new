@@ -1,0 +1,158 @@
+pipeline {
+    agent any
+
+    environment {
+        AWS_ACCOUNT_ID     = '853149252707'
+        AWS_REGION         = 'ap-south-1'
+        ECR_REGISTRY       = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
+        SERVICE_NAME       = 'user-service'
+        ECR_REPO           = "${ECR_REGISTRY}/bidauc/${SERVICE_NAME}"
+        IMAGE_TAG          = "main-${GIT_COMMIT[0..6]}"
+        DOCKERFILE_PATH    = "./Dockerfile"
+        AWS_CREDENTIALS_ID = 'aws-bidauc-jenkins'
+    }
+
+    options {
+        buildDiscarder(logRotator(numToKeepStr: '10'))
+        timeout(time: 20, unit: 'MINUTES')
+        disableConcurrentBuilds()
+    }
+
+    triggers {
+        githubPush()
+    }
+
+    stages {
+
+        stage('Guard: Changed Files') {
+            steps {
+                script {
+                    def changedFiles = sh(
+                        script: "git diff --name-only HEAD~1 HEAD || echo 'initial'",
+                        returnStdout: true
+                    ).trim()
+
+                    echo "Changed files:\n${changedFiles}"
+
+                    def relevant = changedFiles.split('\n').any { file ->
+                        file.startsWith("services/user-service/") ||
+                        file.startsWith("docker/user-service") ||
+                        file == 'docker-compose.yml'
+                    }
+
+                    if (!relevant) {
+                        currentBuild.result = 'NOT_BUILT'
+                        echo "No changes in user-service. Skipping pipeline."
+                        error("SKIP: No relevant changes detected.")
+                    }
+                }
+            }
+        }
+
+        stage('Checkout') {
+            steps {
+                checkout scm
+                echo "Branch: ${env.GIT_BRANCH}"
+                echo "Commit: ${env.GIT_COMMIT}"
+                echo "Image tag: ${env.IMAGE_TAG}"
+            }
+        }
+
+        stage('Lint') {
+            steps {
+                dir("services/${SERVICE_NAME}") {
+                    sh '''
+                        echo "Running lint checks..."
+                        if [ -f package.json ] && grep -q '"lint"' package.json; then
+                            npm ci
+                            npm run lint
+                        else
+                            echo "No lint script found. Skipping."
+                        fi
+                    '''
+                }
+            }
+        }
+
+        stage('Unit Tests') {
+            steps {
+                dir("services/${SERVICE_NAME}") {
+                    sh '''
+                        echo "[PLACEHOLDER] Unit tests will run here."
+                        echo "TODO: Add Jest/Mocha tests for user-service."
+                        echo "Expected: npm test -- --coverage"
+                        exit 0
+                    '''
+                }
+            }
+            post {
+                always {
+                    echo "Test stage complete. Coverage reports will be published here in future."
+                }
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                script {
+                    echo "Building Docker image: ${ECR_REPO}:${IMAGE_TAG}"
+                    sh """
+                        docker build \
+                            -f ${DOCKERFILE_PATH} \
+                            -t ${ECR_REPO}:${IMAGE_TAG} \
+                            -t ${ECR_REPO}:latest \
+                            --build-arg NODE_ENV=production \
+                            --no-cache \
+                            .
+                    """
+                }
+            }
+        }
+
+        stage('Push to ECR') {
+            steps {
+                script {
+                   sh """
+    aws ecr get-login-password --region ${AWS_REGION} | \
+    docker login --username AWS --password-stdin ${ECR_REGISTRY}
+    docker push ${ECR_REPO}:${IMAGE_TAG}
+    docker push ${ECR_REPO}:latest
+"""
+                }
+            }
+        }
+
+        stage('Cleanup') {
+            steps {
+                sh """
+                    docker rmi ${ECR_REPO}:${IMAGE_TAG} || true
+                    docker rmi ${ECR_REPO}:latest || true
+                    echo "Local images cleaned up."
+                """
+            }
+        }
+    }
+
+    post {
+        success {
+            echo """
+            ✅ Pipeline SUCCESS
+            Service:  ${SERVICE_NAME}
+            Image:    ${ECR_REPO}:${IMAGE_TAG}
+            Commit:   ${GIT_COMMIT}
+            """
+        }
+        failure {
+            echo """
+            ❌ Pipeline FAILED
+            Service: ${SERVICE_NAME}
+            Branch:  ${GIT_BRANCH}
+            Commit:  ${GIT_COMMIT}
+            Check logs above for root cause.
+            """
+        }
+        always {
+            cleanWs()
+        }
+    }
+}

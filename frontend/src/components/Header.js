@@ -12,7 +12,7 @@ const Header = () => {
   const handleLogout = async () => {
     await logout();
     toast.success('Logged out successfully');
-    navigate('/login');
+    navigate('/');
   };
 
   return (
