@@ -8,7 +8,7 @@ pipeline {
         SERVICE_NAME       = 'notification-service'
         ECR_REPO           = "${ECR_REGISTRY}/bidauc/${SERVICE_NAME}"
         IMAGE_TAG          = "main-${GIT_COMMIT[0..6]}"
-        DOCKERFILE_PATH    = "./Dockerfile"
+        DOCKERFILE_PATH    = "./services/${SERVICE_NAME}/Dockerfile"
         AWS_CREDENTIALS_ID = 'aws-bidauc-jenkins'
     }
 
@@ -92,19 +92,21 @@ pipeline {
             }
         }
 
-        stage('Build Docker Image') {
+         stage('Build Docker Image') {
             steps {
-                script {
-                    echo "Building Docker image: ${ECR_REPO}:${IMAGE_TAG}"
-                    sh """
-                        docker build \
-                            -f ${DOCKERFILE_PATH} \
+                dir("services/${SERVICE_NAME}") {
+                    script {
+                        echo "Building Docker image: ${ECR_REPO}:${IMAGE_TAG}"
+                        sh """
+                            docker build \
+                            -f ./Dockerfile \
                             -t ${ECR_REPO}:${IMAGE_TAG} \
                             -t ${ECR_REPO}:latest \
                             --build-arg NODE_ENV=production \
                             --no-cache \
                             .
                     """
+                    }
                 }
             }
         }
@@ -113,15 +115,16 @@ pipeline {
             steps {
                 script {
                     sh """
-    aws ecr get-login-password --region ${AWS_REGION} | \
-    docker login --username AWS --password-stdin ${ECR_REGISTRY}
-    docker push ${ECR_REPO}:${IMAGE_TAG}
-    docker push ${ECR_REPO}:latest
-"""
-                }
-            }
+                        aws ecr get-login-password --region ${AWS_REGION} | \
+                        docker login --username AWS --password-stdin ${ECR_REGISTRY}
+                        docker push ${ECR_REPO}:${IMAGE_TAG}
+                        docker push ${ECR_REPO}:latest
+                    """
+                                    }
+                                }
         }
 
+        
         stage('Cleanup') {
             steps {
                 sh """
